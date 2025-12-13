@@ -44,7 +44,7 @@ public class ErrorResponse {
 
     /**
      * A URI identifying this specific problem occurrence.
-     * Example: "/api/items/999"
+     * Example: "/api/v1/items/999"
      */
     private String instance;
 }

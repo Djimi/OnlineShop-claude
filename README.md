@@ -83,14 +83,14 @@ The service will start on port `9000`.
 
 4. Test the API:
 ```bash
-curl http://localhost:9000/api/items
+curl http://localhost:9000/api/v1/items
 ```
 
 ## API Endpoints
 
 ### Items Service (Port 9000)
 
-- `GET /api/items` - Get all items
+- `GET /api/v1/items` - Get all items
 
 ## Development
 
