@@ -27,7 +27,7 @@ public class ItemService {
     @Transactional(readOnly = true)
     public ItemDTO getItemById(Long id) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new ItemNotFoundException("Item not found with id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException(id));
         return convertToDTO(item);
     }
 
@@ -46,7 +46,7 @@ public class ItemService {
     @Transactional
     public ItemDTO updateItem(Long id, ItemDTO itemDTO) {
         Item existingItem = itemRepository.findById(id)
-                .orElseThrow(() -> new ItemNotFoundException("Item not found with id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException(id));
 
         existingItem.setName(itemDTO.getName());
         existingItem.setQuantity(itemDTO.getQuantity());
