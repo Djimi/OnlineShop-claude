@@ -10,21 +10,6 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create index on username for faster lookups
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 
--- Create trigger to update updated_at on row updates
-CREATE OR REPLACE FUNCTION update_user_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS users_update_timestamp ON users;
-CREATE TRIGGER users_update_timestamp
-BEFORE UPDATE ON users
-FOR EACH ROW
-EXECUTE FUNCTION update_user_timestamp();
-
 -- Create sessions table
 CREATE TABLE IF NOT EXISTS sessions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
