@@ -35,8 +35,8 @@ public class AuthController {
     }
 
     private String extractToken(String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+        if (authHeader != null && authHeader.startsWith("Bearer: ")) {
+            return authHeader.substring(8);
         }
         return authHeader;
     }

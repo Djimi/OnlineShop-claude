@@ -5,7 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SourceType;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "users")
@@ -24,20 +28,14 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    // @Column(name = "creat
+    // ed_at", insertable = false, updatable = false)
+    // @Generated(event = EventType.INSERT, value = { "" })
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @CreationTimestamp(source = SourceType.DB)
+    private Instant createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    @UpdateTimestamp(source = SourceType.DB)
+    private Instant updatedAt;
 }
