@@ -29,12 +29,11 @@ public class Session {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    @CreationTimestamp(source = SourceType.DB)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp(source = SourceType.VM)
     private Instant createdAt;
 
     @Column(name = "expires_at", nullable = false)
-    @UpdateTimestamp(source = SourceType.DB)
     private Instant expiresAt;
 
     public boolean isExpired() {

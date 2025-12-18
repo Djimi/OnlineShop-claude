@@ -6,6 +6,13 @@ spring:
     virtual:
       enabled: true
 
+  mvc:
+    throw-exception-if-no-handler-found: true
+    log-request-details: true
+  web:
+    resources:
+      add-mappings: false
+
   datasource:
     url: jdbc:postgresql://localhost:5433/auth
     username: auth
@@ -23,3 +30,29 @@ spring:
 
 session:
   expiration: 3600
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,env,configprops
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+logging:
+  level:
+    com.onlineshop.auth: INFO
+    org.springframework.web: TRACE
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

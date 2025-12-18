@@ -74,11 +74,11 @@ services:
     networks:
       - onlineshop-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:9001/api/v1/auth/register 2>&1 || true"]
-      interval: 10s
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/actuator/health || exit 1"]
+      interval: 30s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 3
+      start_period: 40s
 
   items-service:
     build:
@@ -97,7 +97,7 @@ services:
     networks:
       - onlineshop-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:9000/api/v1/items 2>&1 || true"]
+      test: ["CMD-SHELL", "curl http://localhost:9000/api/v1/items 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 10

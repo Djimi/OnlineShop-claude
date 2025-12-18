@@ -1,4 +1,5 @@
 FROM eclipse-temurin:25-jre-alpine
+RUN apk --no-cache add curl
 
 WORKDIR /app
 
