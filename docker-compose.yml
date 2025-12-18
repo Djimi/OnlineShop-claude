@@ -1,0 +1,134 @@
+services:
+  # ==================== DATABASES ====================
+  items-postgres:
+    image: postgres:16-alpine
+    container_name: items-postgres
+    environment:
+      POSTGRES_DB: items
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - items-postgres-data:/var/lib/postgresql/data
+      - ./Items/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onlineshop-network
+
+  auth-postgres:
+    image: postgres:16-alpine
+    container_name: auth-postgres
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: authpassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-postgres-data:/var/lib/postgresql/data
+      - ./Auth/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onlineshop-network
+
+  # ==================== REDIS (Token Cache) ====================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onlineshop-network
+
+  # ==================== SERVICES ====================
+  auth-service:
+    build:
+      context: ./Auth
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "9001:9001"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-postgres:5432/auth
+      SPRING_DATASOURCE_USERNAME: auth
+      SPRING_DATASOURCE_PASSWORD: authpassword
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+    networks:
+      - onlineshop-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  items-service:
+    build:
+      context: ./Items
+      dockerfile: Dockerfile
+    container_name: items-service
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://items-postgres:5432/items
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+    depends_on:
+      items-postgres:
+        condition: service_healthy
+    networks:
+      - onlineshop-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:9000/api/v1/items 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "10000:10000"
+    environment:
+      GATEWAY_AUTH_SERVICE_URL: http://auth-service:9001
+      GATEWAY_ITEMS_SERVICE_URL: http://items-service:9000
+      SPRING_DATA_REDIS_HOST: redis
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      items-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - onlineshop-network
+
+networks:
+  onlineshop-network:
+    driver: bridge
+
+volumes:
+  items-postgres-data:
+  auth-postgres-data:
+  redis-data:
