@@ -1,6 +1,7 @@
 package com.onlineshop.gateway.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.onlineshop.gateway.dto.ErrorResponse;
 import com.onlineshop.gateway.dto.ValidateResponse;
 import com.onlineshop.gateway.service.AuthValidationService;
@@ -27,7 +28,7 @@ import java.util.*;
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     private final AuthValidationService authValidationService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer: ";
