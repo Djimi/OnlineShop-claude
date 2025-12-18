@@ -1,7 +1,7 @@
 package com.onlineshop.gateway.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions;
 import org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions;
@@ -14,7 +14,9 @@ import org.springframework.web.servlet.function.ServerResponse;
 import java.net.URI;
 
 import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.rewritePath;
+import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.uri;
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
+import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
 import static org.springframework.cloud.gateway.server.mvc.predicate.GatewayRequestPredicates.path;
 
 @Configuration
@@ -28,15 +30,14 @@ public class GatewayConfig {
 
     @Bean
     public ObjectMapper objectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
+        return JsonMapper.builder().build();
     }
 
     @Bean
     public RouterFunction<ServerResponse> authRoute() {
         return route("auth-service")
-                .route(path("/auth/**"), HandlerFunctions.http(authServiceUrl))
+                .route(path("/auth/**"), http())
+                .before(uri(authServiceUrl))
                 .before(rewritePath("/auth(?<segment>/?.*)", "/api/v1/auth${segment}"))
                 .build();
     }
@@ -44,7 +45,8 @@ public class GatewayConfig {
     @Bean
     public RouterFunction<ServerResponse> itemsRoute() {
         return route("items-service")
-                .route(path("/items/**"), HandlerFunctions.http(itemsServiceUrl))
+                .route(path("/items/**"), http())
+                .before(uri(itemsServiceUrl))
                 .before(rewritePath("/items(?<segment>/?.*)", "/api/v1/items${segment}"))
                 .build();
     }
