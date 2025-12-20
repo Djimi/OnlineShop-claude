@@ -20,7 +20,7 @@
         <!-- Dependency versions -->
         <junit.version>6.0.1</junit.version>
         <rest-assured.version>6.0.0</rest-assured.version>
-        <jackson.version>2.20.1</jackson.version>
+        <jackson.version>3.0.3</jackson.version>
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.22</logback.version>
 
@@ -48,7 +48,7 @@
 
         <!-- Jackson for JSON processing -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
             <scope>test</scope>
