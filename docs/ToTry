@@ -1,0 +1,26 @@
+SAGA
+CQRS
+Eventsourcing
+TransactionOutbox
+
+Analytics store
+
+JWT
+
+Domain driven design
+
+TDD 
+
+Test coverage
+
+
+To introducte CacheInterceptor - https://stackoverflow.com/questions/73353675/two-levels-of-cache-redis-caffeine?utm_source=chatgpt.com
+
+------------
+Items 
+
+- Full text search
+- Items card
+- Wish list
+- Orders
+

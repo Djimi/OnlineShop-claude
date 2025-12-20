@@ -95,10 +95,10 @@ d:\CodingProjects\OnlineShop-claude\frontend/
 
 ```bash
 # From repository root
-docker-compose up -d
+docker compose up -d
 
 # Verify all services are running
-docker-compose ps
+docker compose ps
 ```
 
 Expected services:
@@ -402,7 +402,7 @@ Error: Request failed with status code 0
 ```
 **Solution**: Ensure backend services are running:
 ```bash
-docker-compose ps
+docker compose ps
 # All services should show "Up"
 ```
 
