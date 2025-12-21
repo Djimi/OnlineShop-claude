@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch",
+      "WebSearch",
+      "Bash(docker:*)",
+      "Bash(./mvnw.cmd:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm:*)",
+      "Bash(git:*)"
+    ]
+  }
+}
