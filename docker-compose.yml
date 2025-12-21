@@ -1,7 +1,7 @@
 services:
   # ==================== DATABASES ====================
   items-postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: items-postgres
     environment:
       POSTGRES_DB: items
@@ -21,7 +21,7 @@ services:
       - onlineshop-network
 
   auth-postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: auth-postgres
     environment:
       POSTGRES_DB: auth
@@ -42,7 +42,7 @@ services:
 
   # ==================== REDIS (Token Cache) ====================
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: redis
     ports:
       - "6379:6379"
