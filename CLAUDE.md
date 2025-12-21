@@ -74,6 +74,10 @@ cd frontend && npm run build
 - **Corner cases:** Always handle DB/Redis/broker down scenarios
 - **Security:** Follow OWASP guidelines, never log sensitive data
 
+### Design Patterns
+
+Standard design patterns (Repository, Factory, Strategy, etc.) are applied where appropriate throughout the codebase to enhance code maintainability, testability, and adherence to SOLID principles.
+
 ### When Making Changes
 
 1. **Update all related files:** docker compose, tests, architecture docs, ADRs if needed

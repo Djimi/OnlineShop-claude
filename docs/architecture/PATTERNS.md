@@ -1,9 +1,5 @@
 # Architectural Patterns
 
-## Design Patterns
-
-Standard design patterns (Repository, Factory, Strategy, etc.) are applied where appropriate throughout the codebase.
-
 ## Anti-Patterns to Avoid
 
 ### Distributed Monolith
