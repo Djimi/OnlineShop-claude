@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh issue view:*)",
+      "Bash(gh pr create:*)",
+      "Bash(claude mcp add --transport stdio puppeteer --scope user -- docker run -i --rm --init -e DOCKER_CONTAINER=true mcp/puppeteer)",
+      "Bash(claude mcp:*)",
+      "Bash(curl:*)",
+      "mcp__puppeteer__puppeteer_navigate",
+      "mcp__puppeteer__puppeteer_screenshot",
+      "mcp__puppeteer__puppeteer_click",
+      "mcp__puppeteer__puppeteer_evaluate",
+      "mcp__puppeteer__puppeteer_fill",
+      "Bash(mkdir:*)",
+      "Bash(tree:*)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Java/jdk-25\" ./mvnw.cmd clean package:*)"
+    ]
+  }
+}
