@@ -54,6 +54,6 @@ public class ItemsController {
 
     @PutMapping("/{id}")
     public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable Long id, @RequestBody UpdateItemCommand command) {
-        return ResponseEntity.ok(updateItemUseCase.execute(id, command));
+        return ResponseEntity.ok(updateItemUseCase.execute(command));
     }
 }

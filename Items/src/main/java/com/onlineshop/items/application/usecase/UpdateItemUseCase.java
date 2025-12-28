@@ -32,10 +32,10 @@ public class UpdateItemUseCase {
     }
 
     @Transactional
-    public UpdateItemResponse execute(Long id, UpdateItemCommand command) {
-        ItemId itemId = new ItemId(id);
+    public UpdateItemResponse execute(UpdateItemCommand command) {
+        ItemId itemId = new ItemId(command.id());
         Item item = itemRepository.findById(itemId)
-            .orElseThrow(() -> new ItemNotFoundException(id));
+            .orElseThrow(() -> new ItemNotFoundException(command.id()));
 
         ItemName newName = new ItemName(command.name());
         Quantity newQuantity = new Quantity(command.quantity());
