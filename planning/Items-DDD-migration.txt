@@ -1,0 +1,1762 @@
+================================================================================
+ITEMS SERVICE - DDD MIGRATION ROADMAP
+================================================================================
+
+Project: OnlineShop Microservices Platform
+Service: Items Service (Port 9000)
+Analysis Date: 2025-12-24
+Current State: Partial DDD Implementation (Incomplete)
+Target State: Full DDD Implementation with Behavioral Aggregates
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. EXECUTIVE SUMMARY
+2. CURRENT ARCHITECTURE ANALYSIS
+3. DDD PATTERN GAPS IDENTIFIED
+4. CRITICAL ISSUES & CODE PROBLEMS
+5. MIGRATION ROADMAP (10 PHASES)
+6. CODE EXAMPLES: CURRENT vs TARGET
+7. CRITICAL FILES REQUIRING CHANGES
+8. BOUNDED CONTEXT DEFINITION
+9. TESTING STRATEGY
+10. RISK ASSESSMENT & MITIGATION
+11. IMPLEMENTATION CHECKLIST
+12. REFERENCES
+
+================================================================================
+1. EXECUTIVE SUMMARY
+================================================================================
+
+STATUS: Items service has begun DDD migration but stalled at structural level.
+
+GOOD NEWS:
+- Domain package exists with Item aggregate root
+- Value objects implemented (ItemId, ItemName, Quantity, ItemDescription)
+- Domain events defined (ItemCreated, ItemUpdated, ItemDeleted)
+- Immutable domain model with final fields
+- Extends AggregateRoot<ItemId> from common module
+
+CRITICAL PROBLEMS:
+- DUAL ITEM CLASSES: Both domain/Item.java and entity/Item.java exist
+- Service layer uses JPA entity, NOT domain aggregate
+- Domain aggregate has no behavior (just a data container)
+- Domain events NEVER published
+- Business logic scattered in ItemService.java
+- No invariant validation
+- Direct entity mutation via setters
+- No application service layer
+
+MIGRATION COMPLEXITY: Medium
+MIGRATION RISK: Low (domain foundation already exists)
+ESTIMATED EFFORT: 8-10 hours
+
+RECOMMENDED APPROACH: Evolutionary refactoring (incremental changes)
+
+================================================================================
+2. CURRENT ARCHITECTURE ANALYSIS
+================================================================================
+
+2.1 CURRENT PACKAGE STRUCTURE
+------------------------------
+
+Items/src/main/java/com/onlineshop/items/
+├── ItemsApplication.java              # Spring Boot entry point
+├── controller/
+│   └── ItemsController.java           # REST endpoints (HTTP layer)
+├── domain/                             # ⚠️ Exists but underutilized
+│   ├── Item.java                      # Domain aggregate (structural only)
+│   └── event/
+│       ├── ItemCreated.java          # Domain event (never published)
+│       ├── ItemDeleted.java          # Domain event (never published)
+│       └── ItemUpdated.java          # Domain event (never published)
+├── dto/
+│   ├── ItemDTO.java                   # API request/response
+│   └── ErrorResponse.java             # Error handling
+├── entity/                             # ⚠️ PROBLEM: Duplicate model
+│   └── Item.java                      # JPA entity (mutable, anemic)
+├── exception/
+│   ├── GlobalExceptionHandler.java    # Spring exception handler
+│   └── ItemNotFoundException.java     # Domain exception
+├── repository/
+│   └── ItemRepository.java            # Spring Data JPA interface
+└── service/
+    └── ItemService.java               # ⚠️ Contains business logic
+
+PROBLEM: Mixed architectural patterns (DDD + traditional layered)
+
+2.2 DOMAIN MODEL ANALYSIS
+--------------------------
+
+File: Items/src/main/java/com/onlineshop/items/domain/Item.java
+
+Current Implementation:
+```java
+@Getter
+public class Item extends AggregateRoot<ItemId> {
+    private final ItemName name;
+    private final Quantity quantity;
+    private final ItemDescription description;
+
+    public Item(ItemId id, ItemName name, Quantity quantity, ItemDescription description) {
+        super(id);
+        this.name = name;
+        this.quantity = quantity;
+        this.description = description;
+    }
+}
+```
+
+POSITIVES:
+✅ Extends AggregateRoot<ItemId> (proper DDD structure)
+✅ Uses value objects instead of primitives
+✅ Immutable fields (final keyword)
+✅ Read-only access via @Getter
+
+NEGATIVES:
+❌ No domain behavior (just getters, no business methods)
+❌ No factory method for creation
+❌ No invariant validation
+❌ No domain event publishing
+❌ Public constructor allows invalid object creation
+❌ Not used anywhere in the application (service uses entity instead)
+
+SEVERITY: HIGH - Domain aggregate is just a data container
+
+2.3 JPA ENTITY ANALYSIS (Duplicate Model)
+------------------------------------------
+
+File: Items/src/main/java/com/onlineshop/items/entity/Item.java
+
+Current Implementation:
+```java
+@Entity
+@Table(name = "items")
+@Data                                  // ⚠️ Generates setters
+@NoArgsConstructor
+@AllArgsConstructor
+public class Item {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private int quantity;
+
+    @Column(length = 500)
+    private String description;
+}
+```
+
+PROBLEMS:
+❌ @Data annotation exposes setters (violates immutability)
+❌ Primitive types instead of value objects
+❌ JPA annotations mixed with domain model
+❌ No invariant protection
+❌ Allows invalid states (quantity can be negative, name can be empty)
+❌ THIS is what ItemService uses (not the domain aggregate)
+
+SEVERITY: CRITICAL - Dual model causes confusion and violates DDD
+
+2.4 BUSINESS LOGIC LOCATION (Anti-pattern)
+-------------------------------------------
+
+File: Items/src/main/java/com/onlineshop/items/service/ItemService.java
+
+Current Implementation:
+```java
+@Service
+@RequiredArgsConstructor
+public class ItemService {
+    private final ItemRepository itemRepository;
+
+    @Transactional
+    public ItemDTO createItem(ItemDTO itemDTO) {
+        // Line 37-42: Entity construction (should be in domain)
+        Item item = new Item(
+            null,  // ID will be auto-generated
+            itemDTO.getName(),
+            itemDTO.getQuantity(),
+            itemDTO.getDescription()
+        );
+        Item savedItem = itemRepository.save(item);
+        return convertToDTO(savedItem);
+    }
+
+    @Transactional
+    public ItemDTO updateItem(Long id, ItemDTO itemDTO) {
+        // Line 47-49: Entity lookup
+        Item existingItem = itemRepository.findById(id)
+            .orElseThrow(() -> new ItemNotFoundException(id));
+
+        // Line 51-53: DIRECT MUTATION (violates aggregate pattern)
+        existingItem.setName(itemDTO.getName());
+        existingItem.setQuantity(itemDTO.getQuantity());
+        existingItem.setDescription(itemDTO.getDescription());
+
+        Item updatedItem = itemRepository.save(existingItem);
+        return convertToDTO(updatedItem);
+    }
+
+    // Line 71-75: DTO conversion (should use mapper)
+    private ItemDTO convertToDTO(Item item) {
+        return new ItemDTO(
+            item.getId(),
+            item.getName(),
+            item.getQuantity(),
+            item.getDescription()
+        );
+    }
+}
+```
+
+PROBLEMS:
+❌ Business logic in service layer (should be in domain)
+❌ Direct entity mutation via setters (lines 51-53)
+❌ No validation (quantity can be negative, name can be empty)
+❌ Manual DTO conversion (should use mapper or factory)
+❌ No domain event publishing
+❌ Uses JPA entity, NOT domain aggregate
+
+SEVERITY: HIGH - Service layer is anemic orchestration + domain logic mix
+
+2.5 REPOSITORY ANALYSIS
+------------------------
+
+File: Items/src/main/java/com/onlineshop/items/repository/ItemRepository.java
+
+Current Implementation:
+```java
+@Repository
+public interface ItemRepository extends JpaRepository<Item, Long> {
+}
+```
+
+PROBLEMS:
+❌ Directly extends Spring Data JPA (infrastructure coupling)
+❌ Works with JPA entity (entity/Item.java), not domain aggregate
+❌ No domain repository abstraction
+❌ Generic JpaRepository<Item, Long> instead of JpaRepository<Item, ItemId>
+❌ No custom domain-specific query methods
+
+SEVERITY: MEDIUM - Missing proper repository abstraction
+
+2.6 VALUE OBJECTS (Already Implemented in Common Module)
+---------------------------------------------------------
+
+EXCELLENT: Value objects already exist in common module:
+
+1. ItemId.java (common/src/main/java/com/onlineshop/common/domain/valueobject/)
+```java
+public class ItemId extends BaseId<Long> {
+    protected ItemId(Long value) {
+        super(value);
+    }
+    public static ItemId of(Long value) {
+        return new ItemId(value);
+    }
+}
+```
+
+2. ItemName.java
+```java
+public record ItemName(String value) {
+}
+```
+
+3. Quantity.java
+```java
+@Getter
+@RequiredArgsConstructor
+public class Quantity {
+    private final int amount;
+
+    public boolean isGreaterThanZero() {
+        return amount > 0;
+    }
+}
+```
+
+4. ItemDescription.java
+```java
+public record ItemDescription(String value) {
+}
+```
+
+POSITIVES:
+✅ Immutable (records and final fields)
+✅ Factory methods for creation
+✅ Quantity has domain behavior (isGreaterThanZero)
+
+MISSING:
+❌ Validation in ItemName (can be null or empty)
+❌ Validation in Quantity (can be negative)
+❌ Validation in ItemDescription (can exceed max length)
+
+================================================================================
+3. DDD PATTERN GAPS IDENTIFIED
+================================================================================
+
+3.1 AGGREGATE ROOT (Structural but not Behavioral)
+---------------------------------------------------
+
+CURRENT: Item aggregate exists but has no behavior
+TARGET: Item aggregate with domain methods and invariant protection
+
+MISSING BEHAVIORS:
+- Factory method: Item.createNew(name, quantity, description)
+- Update method: item.updateDetails(name, quantity, description)
+- Validation: Enforce invariants (quantity >= 0, name not empty)
+- Event publishing: Publish ItemCreated, ItemUpdated, ItemDeleted
+
+3.2 DOMAIN EVENTS (Defined but Never Published)
+------------------------------------------------
+
+CURRENT: Events defined as records but never used
+TARGET: Events published when aggregate state changes
+
+EVENTS THAT SHOULD BE PUBLISHED:
+1. ItemCreated - when new item added to catalog
+2. ItemUpdated - when item details change
+3. ItemDeleted - when item removed from catalog
+
+3.3 REPOSITORY ABSTRACTION (Infrastructure Leakage)
+----------------------------------------------------
+
+CURRENT: Spring Data JPA interface used directly
+TARGET: Domain repository interface + infrastructure adapter
+
+MISSING:
+- Domain repository interface in domain package
+- JPA adapter implementation in infrastructure package
+- Mapping between domain aggregate and JPA entity
+
+3.4 APPLICATION SERVICE LAYER (Missing)
+----------------------------------------
+
+CURRENT: ItemService mixes orchestration and domain logic
+TARGET: Separate application services for use cases
+
+MISSING:
+- CreateItemCommand / CreateItemUseCase
+- UpdateItemCommand / UpdateItemUseCase
+- DeleteItemCommand / DeleteItemUseCase
+- GetItemQuery / GetItemQueryHandler
+
+3.5 INVARIANT VALIDATION (Not Enforced)
+----------------------------------------
+
+CURRENT: No validation, invalid states allowed
+TARGET: Aggregate enforces invariants at construction and mutation
+
+BUSINESS RULES TO ENFORCE:
+1. Item name cannot be null or empty
+2. Item name max length (e.g., 200 characters)
+3. Quantity must be >= 0
+4. Description is optional but max length (e.g., 500 characters)
+
+3.6 UBIQUITOUS LANGUAGE (Inconsistent)
+---------------------------------------
+
+CURRENT: Mixed terminology (DTO fields vs. domain concepts)
+TARGET: Consistent domain language throughout
+
+EXAMPLES:
+- "createItem" vs. "addItemToCatalog" (which reflects business intent?)
+- "updateItem" vs. "changeItemDetails"
+- "quantity" vs. "stockLevel"
+
+================================================================================
+4. CRITICAL ISSUES & CODE PROBLEMS
+================================================================================
+
+ISSUE #1: DUAL ITEM CLASSES (Most Critical)
+--------------------------------------------
+
+SEVERITY: CRITICAL
+IMPACT: Confusion, maintenance nightmare, violates DDD
+
+PROBLEM:
+- domain/Item.java: Domain aggregate (immutable, value objects)
+- entity/Item.java: JPA entity (mutable, primitives)
+- ItemService uses entity version, NOT domain version
+
+FILE LOCATIONS:
+- Domain: Items/src/main/java/com/onlineshop/items/domain/Item.java
+- Entity: Items/src/main/java/com/onlineshop/items/entity/Item.java
+
+SOLUTION:
+Option A: Delete entity/Item.java, add JPA annotations to domain aggregate
+Option B: Keep both, create mapping layer in infrastructure package
+Option C: Create separate JPA model in infrastructure, map in repository adapter
+
+RECOMMENDED: Option C (cleanest separation of concerns)
+
+ISSUE #2: BUSINESS LOGIC IN SERVICE LAYER
+------------------------------------------
+
+SEVERITY: HIGH
+IMPACT: Violates DDD, hard to test domain logic
+
+PROBLEM:
+ItemService.updateItem() directly mutates entity:
+```java
+// Lines 51-53 in ItemService.java
+existingItem.setName(itemDTO.getName());
+existingItem.setQuantity(itemDTO.getQuantity());
+existingItem.setDescription(itemDTO.getDescription());
+```
+
+FILE LOCATION: Items/src/main/java/com/onlineshop/items/service/ItemService.java
+
+SOLUTION:
+Move logic to domain aggregate:
+```java
+// In domain/Item.java
+public void updateDetails(ItemName newName, Quantity newQuantity, ItemDescription newDescription) {
+    validateUpdate(newName, newQuantity, newDescription);
+    this.name = newName;
+    this.quantity = newQuantity;
+    this.description = newDescription;
+    registerEvent(new ItemUpdated(this.id, newName, newQuantity, newDescription));
+}
+```
+
+ISSUE #3: NO DOMAIN EVENT PUBLISHING
+-------------------------------------
+
+SEVERITY: HIGH
+IMPACT: Events defined but unused, event sourcing impossible
+
+PROBLEM:
+Events exist but are never published:
+- ItemCreated.java (Lines: defined but never instantiated)
+- ItemUpdated.java (Lines: defined but never instantiated)
+- ItemDeleted.java (Lines: defined but never instantiated)
+
+FILE LOCATIONS:
+- Items/src/main/java/com/onlineshop/items/domain/event/ItemCreated.java
+- Items/src/main/java/com/onlineshop/items/domain/event/ItemUpdated.java
+- Items/src/main/java/com/onlineshop/items/domain/event/ItemDeleted.java
+
+SOLUTION:
+1. Add event registration to aggregate methods
+2. Publish events in application service:
+```java
+@Service
+public class CreateItemUseCase {
+    private final ItemRepository itemRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    public ItemDTO createItem(CreateItemCommand command) {
+        Item item = Item.createNew(...);
+        itemRepository.save(item);
+
+        // Publish domain events
+        item.getDomainEvents().forEach(eventPublisher::publishEvent);
+        item.clearDomainEvents();
+
+        return toDTO(item);
+    }
+}
+```
+
+ISSUE #4: ENTITY MUTABILITY VIA @DATA
+--------------------------------------
+
+SEVERITY: HIGH
+IMPACT: Violates immutability principle, allows invalid state changes
+
+PROBLEM:
+entity/Item.java uses @Data annotation which generates setters:
+```java
+@Data  // Generates: setName(), setQuantity(), setDescription()
+public class Item {
+    private Long id;
+    private String name;
+    private int quantity;
+    private String description;
+}
+```
+
+FILE LOCATION: Items/src/main/java/com/onlineshop/items/entity/Item.java
+
+SOLUTION:
+If keeping entity class, replace @Data with @Getter and explicit constructor
+
+ISSUE #5: NO INVARIANT VALIDATION
+----------------------------------
+
+SEVERITY: MEDIUM
+IMPACT: Invalid domain objects can be created
+
+PROBLEM:
+No validation at construction or mutation:
+- Quantity can be negative (e.g., -100)
+- Name can be empty string ("")
+- Name can be null
+
+FILE LOCATIONS:
+- domain/Item.java (constructor has no validation)
+- entity/Item.java (setters allow invalid values)
+- common/.../Quantity.java (no factory method validation)
+- common/.../ItemName.java (record has no validation)
+
+SOLUTION:
+Add validation to value object factory methods:
+```java
+public record ItemName(String value) {
+    public ItemName {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Item name cannot be blank");
+        }
+        if (value.length() > 200) {
+            throw new IllegalArgumentException("Item name too long (max 200 characters)");
+        }
+    }
+
+    public static ItemName of(String value) {
+        return new ItemName(value);
+    }
+}
+```
+
+ISSUE #6: REPOSITORY WORKS WITH WRONG MODEL
+--------------------------------------------
+
+SEVERITY: MEDIUM
+IMPACT: Infrastructure coupling, domain aggregate unused
+
+PROBLEM:
+ItemRepository extends JpaRepository<Item, Long> where Item is the JPA entity,
+not the domain aggregate.
+
+FILE LOCATION: Items/src/main/java/com/onlineshop/items/repository/ItemRepository.java
+
+SOLUTION:
+Create domain repository interface + JPA adapter:
+```java
+// In domain/repository/ItemRepository.java
+public interface ItemRepository {
+    void save(Item item);
+    Optional<Item> findById(ItemId id);
+    List<Item> findAll();
+    void delete(ItemId id);
+}
+
+// In infrastructure/persistence/JpaItemRepositoryAdapter.java
+@Repository
+class JpaItemRepositoryAdapter implements ItemRepository {
+    private final SpringDataItemRepository jpaRepository;
+    private final ItemMapper mapper;
+
+    @Override
+    public void save(Item item) {
+        ItemJpaEntity entity = mapper.toEntity(item);
+        jpaRepository.save(entity);
+    }
+    // ... other methods
+}
+```
+
+================================================================================
+5. MIGRATION ROADMAP (10 PHASES)
+================================================================================
+
+APPROACH: Evolutionary refactoring (incremental, testable changes)
+PREREQUISITE: All tests passing before starting
+
+PHASE 1: ADD VALUE OBJECT VALIDATION
+-------------------------------------
+
+EFFORT: 1 hour
+RISK: Low
+FILES: common/src/main/java/com/onlineshop/common/domain/valueobject/*
+
+TASKS:
+1. Add validation to ItemName record (compact constructor)
+2. Add validation to Quantity factory method
+3. Add validation to ItemDescription record
+4. Write unit tests for each value object
+
+CODE EXAMPLE:
+```java
+// ItemName.java
+public record ItemName(String value) {
+    public ItemName {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Item name cannot be blank");
+        }
+        if (value.length() > 200) {
+            throw new IllegalArgumentException("Item name too long");
+        }
+    }
+
+    public static ItemName of(String value) {
+        return new ItemName(value);
+    }
+}
+
+// Quantity.java
+public static Quantity of(int amount) {
+    if (amount < 0) {
+        throw new IllegalArgumentException("Quantity cannot be negative");
+    }
+    return new Quantity(amount);
+}
+```
+
+TESTING:
+- Test valid value object creation
+- Test validation failures (null, empty, negative, too long)
+
+PHASE 2: ADD DOMAIN BEHAVIOR TO AGGREGATE
+------------------------------------------
+
+EFFORT: 2 hours
+RISK: Low
+FILES: Items/src/main/java/com/onlineshop/items/domain/Item.java
+
+TASKS:
+1. Add private constructor (prevent direct instantiation)
+2. Add factory method: createNew(ItemName, Quantity, ItemDescription)
+3. Add update method: updateDetails(ItemName, Quantity, ItemDescription)
+4. Add markAsDeleted() method
+5. Add invariant validation
+6. Register domain events
+
+CODE EXAMPLE:
+```java
+@Getter
+public class Item extends AggregateRoot<ItemId> {
+    private final ItemName name;
+    private final Quantity quantity;
+    private final ItemDescription description;
+
+    private Item(ItemId id, ItemName name, Quantity quantity, ItemDescription description) {
+        super(id);
+        validateInvariants(name, quantity, description);
+        this.name = name;
+        this.quantity = quantity;
+        this.description = description;
+    }
+
+    // Factory method for new items
+    public static Item createNew(ItemName name, Quantity quantity, ItemDescription description) {
+        Item item = new Item(null, name, quantity, description);
+        item.registerEvent(new ItemCreated(item.getId(), name, quantity, description));
+        return item;
+    }
+
+    // Reconstitution from persistence (package-private)
+    static Item fromPersistence(ItemId id, ItemName name, Quantity quantity, ItemDescription description) {
+        return new Item(id, name, quantity, description);
+    }
+
+    // Update behavior
+    public void updateDetails(ItemName newName, Quantity newQuantity, ItemDescription newDescription) {
+        validateInvariants(newName, newQuantity, newDescription);
+
+        // Only update if changed
+        boolean changed = !this.name.equals(newName) ||
+                         !this.quantity.equals(newQuantity) ||
+                         !this.description.equals(newDescription);
+
+        if (changed) {
+            this.name = newName;
+            this.quantity = newQuantity;
+            this.description = newDescription;
+            registerEvent(new ItemUpdated(this.id, newName, newQuantity, newDescription));
+        }
+    }
+
+    // Delete behavior
+    public void markAsDeleted() {
+        registerEvent(new ItemDeleted(this.id));
+    }
+
+    private void validateInvariants(ItemName name, Quantity quantity, ItemDescription description) {
+        if (name == null) {
+            throw new IllegalArgumentException("Item name is required");
+        }
+        if (quantity == null) {
+            throw new IllegalArgumentException("Quantity is required");
+        }
+        if (!quantity.isGreaterThanZero() && quantity.getAmount() != 0) {
+            throw new IllegalArgumentException("Quantity must be non-negative");
+        }
+    }
+}
+```
+
+TESTING:
+- Test factory method creates item with correct values
+- Test factory method registers ItemCreated event
+- Test updateDetails only updates when values change
+- Test updateDetails registers ItemUpdated event
+- Test invariant validation failures
+
+PHASE 3: CREATE APPLICATION SERVICE LAYER
+------------------------------------------
+
+EFFORT: 2 hours
+RISK: Low
+FILES: Items/src/main/java/com/onlineshop/items/application/*
+
+TASKS:
+1. Create application/ package
+2. Create commands: CreateItemCommand, UpdateItemCommand, DeleteItemCommand
+3. Create use cases: CreateItemUseCase, UpdateItemUseCase, DeleteItemUseCase
+4. Move orchestration logic from ItemService to use cases
+
+CODE EXAMPLE:
+```java
+// CreateItemCommand.java
+public record CreateItemCommand(
+    String name,
+    int quantity,
+    String description
+) {}
+
+// CreateItemUseCase.java
+@Service
+@RequiredArgsConstructor
+public class CreateItemUseCase {
+    private final ItemRepository itemRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional
+    public ItemDTO execute(CreateItemCommand command) {
+        // Convert to value objects
+        ItemName name = ItemName.of(command.name());
+        Quantity quantity = Quantity.of(command.quantity());
+        ItemDescription description = ItemDescription.of(command.description());
+
+        // Create aggregate
+        Item item = Item.createNew(name, quantity, description);
+
+        // Persist
+        itemRepository.save(item);
+
+        // Publish events
+        item.getDomainEvents().forEach(eventPublisher::publishEvent);
+        item.clearDomainEvents();
+
+        // Return DTO
+        return new ItemDTO(
+            item.getId().getValue(),
+            item.getName().value(),
+            item.getQuantity().getAmount(),
+            item.getDescription().value()
+        );
+    }
+}
+```
+
+TESTING:
+- Test use case creates item via aggregate factory
+- Test use case persists item
+- Test use case publishes domain events
+- Test use case returns DTO
+
+PHASE 4: CREATE DOMAIN REPOSITORY INTERFACE
+--------------------------------------------
+
+EFFORT: 1 hour
+RISK: Low
+FILES: Items/src/main/java/com/onlineshop/items/domain/repository/ItemRepository.java
+
+TASKS:
+1. Create domain/repository/ package
+2. Create ItemRepository interface (domain contract)
+3. Define methods using domain types (ItemId, not Long)
+
+CODE EXAMPLE:
+```java
+package com.onlineshop.items.domain.repository;
+
+import com.onlineshop.items.domain.Item;
+import com.onlineshop.common.domain.valueobject.ItemId;
+import java.util.List;
+import java.util.Optional;
+
+public interface ItemRepository {
+    void save(Item item);
+    Optional<Item> findById(ItemId id);
+    List<Item> findAll();
+    void delete(ItemId id);
+    boolean existsById(ItemId id);
+}
+```
+
+TESTING:
+- No direct tests (interface only)
+- Tests in Phase 5 (adapter implementation)
+
+PHASE 5: CREATE INFRASTRUCTURE PERSISTENCE LAYER
+-------------------------------------------------
+
+EFFORT: 3 hours
+RISK: Medium
+FILES:
+- Items/src/main/java/com/onlineshop/items/infrastructure/persistence/*
+- Keep Items/src/main/java/com/onlineshop/items/entity/Item.java (rename to ItemJpaEntity)
+
+TASKS:
+1. Create infrastructure/persistence/ package
+2. Rename entity/Item.java to ItemJpaEntity.java
+3. Create ItemMapper to map domain Item <-> ItemJpaEntity
+4. Create JpaItemRepositoryAdapter implementing domain ItemRepository
+5. Create SpringDataItemRepository (Spring Data JPA interface)
+
+CODE EXAMPLE:
+```java
+// ItemJpaEntity.java (renamed from entity/Item.java)
+@Entity
+@Table(name = "items")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ItemJpaEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 200)
+    private String name;
+
+    @Column(nullable = false)
+    private int quantity;
+
+    @Column(length = 500)
+    private String description;
+}
+
+// SpringDataItemRepository.java
+@Repository
+interface SpringDataItemRepository extends JpaRepository<ItemJpaEntity, Long> {
+}
+
+// ItemMapper.java
+@Component
+public class ItemMapper {
+    public ItemJpaEntity toEntity(Item item) {
+        return new ItemJpaEntity(
+            item.getId() != null ? item.getId().getValue() : null,
+            item.getName().value(),
+            item.getQuantity().getAmount(),
+            item.getDescription().value()
+        );
+    }
+
+    public Item toDomain(ItemJpaEntity entity) {
+        return Item.fromPersistence(
+            ItemId.of(entity.getId()),
+            ItemName.of(entity.getName()),
+            Quantity.of(entity.getQuantity()),
+            ItemDescription.of(entity.getDescription())
+        );
+    }
+}
+
+// JpaItemRepositoryAdapter.java
+@Repository
+@RequiredArgsConstructor
+public class JpaItemRepositoryAdapter implements ItemRepository {
+    private final SpringDataItemRepository jpaRepository;
+    private final ItemMapper mapper;
+
+    @Override
+    public void save(Item item) {
+        ItemJpaEntity entity = mapper.toEntity(item);
+        ItemJpaEntity saved = jpaRepository.save(entity);
+
+        // Update aggregate with generated ID if new
+        if (item.getId() == null) {
+            // Need to handle ID assignment - see Item.java setId method
+        }
+    }
+
+    @Override
+    public Optional<Item> findById(ItemId id) {
+        return jpaRepository.findById(id.getValue())
+            .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Item> findAll() {
+        return jpaRepository.findAll().stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    public void delete(ItemId id) {
+        jpaRepository.deleteById(id.getValue());
+    }
+
+    @Override
+    public boolean existsById(ItemId id) {
+        return jpaRepository.existsById(id.getValue());
+    }
+}
+```
+
+TESTING:
+- Integration tests for adapter (Testcontainers + PostgreSQL)
+- Test save/find round-trip
+- Test mapping domain <-> entity
+
+PHASE 6: UPDATE CONTROLLER TO USE APPLICATION SERVICES
+-------------------------------------------------------
+
+EFFORT: 1 hour
+RISK: Low
+FILES: Items/src/main/java/com/onlineshop/items/controller/ItemsController.java
+
+TASKS:
+1. Inject application use cases instead of ItemService
+2. Call use cases from controller methods
+3. Keep API contract unchanged (backward compatibility)
+
+CODE EXAMPLE:
+```java
+@RestController
+@RequestMapping("/api/v1/items")
+@RequiredArgsConstructor
+public class ItemsController {
+    private final CreateItemUseCase createItemUseCase;
+    private final UpdateItemUseCase updateItemUseCase;
+    private final DeleteItemUseCase deleteItemUseCase;
+    private final GetItemQuery getItemQuery;
+    private final GetAllItemsQuery getAllItemsQuery;
+
+    @PostMapping
+    public ResponseEntity<ItemDTO> createItem(@RequestBody @Valid ItemDTO itemDTO) {
+        CreateItemCommand command = new CreateItemCommand(
+            itemDTO.getName(),
+            itemDTO.getQuantity(),
+            itemDTO.getDescription()
+        );
+        ItemDTO result = createItemUseCase.execute(command);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ItemDTO> updateItem(@PathVariable Long id, @RequestBody @Valid ItemDTO itemDTO) {
+        UpdateItemCommand command = new UpdateItemCommand(
+            id,
+            itemDTO.getName(),
+            itemDTO.getQuantity(),
+            itemDTO.getDescription()
+        );
+        ItemDTO result = updateItemUseCase.execute(command);
+        return ResponseEntity.ok(result);
+    }
+
+    // Other endpoints...
+}
+```
+
+TESTING:
+- Update controller tests to verify use case calls
+- E2E tests should pass unchanged (API contract preserved)
+
+PHASE 7: DELETE OLD SERVICE & ENTITY CLASSES
+---------------------------------------------
+
+EFFORT: 0.5 hours
+RISK: Low
+FILES:
+- DELETE: Items/src/main/java/com/onlineshop/items/service/ItemService.java
+- DELETE: Items/src/main/java/com/onlineshop/items/entity/Item.java (if renamed in Phase 5)
+- DELETE: Items/src/main/java/com/onlineshop/items/repository/ItemRepository.java (old Spring Data interface)
+
+TASKS:
+1. Delete ItemService.java (replaced by use cases)
+2. Delete entity/Item.java (replaced by infrastructure/persistence/ItemJpaEntity.java)
+3. Delete old ItemRepository.java (replaced by domain repository interface)
+
+VERIFICATION:
+- Run all tests (unit + integration + e2e)
+- Verify no compilation errors
+- Verify application starts successfully
+
+PHASE 8: IMPLEMENT DOMAIN EVENT PUBLISHING
+-------------------------------------------
+
+EFFORT: 1 hour
+RISK: Low
+FILES:
+- Items/src/main/java/com/onlineshop/items/application/*UseCase.java
+- common/src/main/java/com/onlineshop/common/domain/entity/AggregateRoot.java (if needed)
+
+TASKS:
+1. Verify AggregateRoot has getDomainEvents() and clearDomainEvents()
+2. Update use cases to publish events
+3. Create event listeners (logging for now)
+4. Test event publishing
+
+CODE EXAMPLE:
+```java
+// In CreateItemUseCase
+@Transactional
+public ItemDTO execute(CreateItemCommand command) {
+    Item item = Item.createNew(...);
+    itemRepository.save(item);
+
+    // Publish events
+    item.getDomainEvents().forEach(event -> {
+        eventPublisher.publishEvent(event);
+        // Log for visibility
+        log.info("Published domain event: {}", event);
+    });
+    item.clearDomainEvents();
+
+    return toDTO(item);
+}
+
+// ItemEventListener.java (for testing)
+@Component
+@Slf4j
+public class ItemEventListener {
+    @EventListener
+    public void handleItemCreated(ItemCreated event) {
+        log.info("Item created: {}", event);
+    }
+
+    @EventListener
+    public void handleItemUpdated(ItemUpdated event) {
+        log.info("Item updated: {}", event);
+    }
+
+    @EventListener
+    public void handleItemDeleted(ItemDeleted event) {
+        log.info("Item deleted: {}", event);
+    }
+}
+```
+
+TESTING:
+- Integration test verifies events are published
+- Test event listener receives events
+- Verify event payload correctness
+
+PHASE 9: ADD COMPREHENSIVE UNIT TESTS
+--------------------------------------
+
+EFFORT: 2 hours
+RISK: Low
+FILES: Items/src/test/java/com/onlineshop/items/**/*Test.java
+
+TASKS:
+1. Write unit tests for domain aggregate (Item.java)
+2. Write unit tests for value objects (if not done in Phase 1)
+3. Write unit tests for application use cases
+4. Write integration tests for repository adapter
+5. Update existing tests to work with new architecture
+
+TEST COVERAGE TARGET: >90%
+
+PHASE 10: RUN FULL TEST SUITE & DOCUMENTATION
+----------------------------------------------
+
+EFFORT: 1 hour
+RISK: Low
+
+TASKS:
+1. Run all unit tests
+2. Run all integration tests
+3. Run all e2e tests
+4. Verify JaCoCo coverage report (>90%)
+5. Update architecture documentation (docs/architecture/PATTERNS.md)
+6. Update ADR if needed (docs/architecture/adr/)
+
+VERIFICATION:
+- All tests passing
+- Coverage >90%
+- E2E tests verify end-to-end functionality
+- Documentation updated
+
+================================================================================
+6. CODE EXAMPLES: CURRENT vs TARGET
+================================================================================
+
+EXAMPLE 1: ITEM CREATION
+-------------------------
+
+CURRENT (Anemic):
+```java
+// ItemService.java
+@Transactional
+public ItemDTO createItem(ItemDTO itemDTO) {
+    Item item = new Item(
+        null,
+        itemDTO.getName(),
+        itemDTO.getQuantity(),
+        itemDTO.getDescription()
+    );
+    Item savedItem = itemRepository.save(item);
+    return convertToDTO(savedItem);
+}
+```
+
+TARGET (DDD):
+```java
+// CreateItemUseCase.java
+@Transactional
+public ItemDTO execute(CreateItemCommand command) {
+    // Convert to value objects
+    ItemName name = ItemName.of(command.name());
+    Quantity quantity = Quantity.of(command.quantity());
+    ItemDescription description = ItemDescription.of(command.description());
+
+    // Use aggregate factory method
+    Item item = Item.createNew(name, quantity, description);
+
+    // Persist via domain repository
+    itemRepository.save(item);
+
+    // Publish domain events
+    item.getDomainEvents().forEach(eventPublisher::publishEvent);
+    item.clearDomainEvents();
+
+    return toDTO(item);
+}
+
+// Item.java (domain aggregate)
+public static Item createNew(ItemName name, Quantity quantity, ItemDescription description) {
+    Item item = new Item(null, name, quantity, description);
+    item.registerEvent(new ItemCreated(item.getId(), name, quantity, description));
+    return item;
+}
+```
+
+BENEFITS:
+✅ Domain logic in aggregate (createNew factory method)
+✅ Invariant validation in aggregate constructor
+✅ Domain events published automatically
+✅ Value objects enforce type safety
+
+EXAMPLE 2: ITEM UPDATE
+-----------------------
+
+CURRENT (Direct Mutation):
+```java
+// ItemService.java
+@Transactional
+public ItemDTO updateItem(Long id, ItemDTO itemDTO) {
+    Item existingItem = itemRepository.findById(id)
+        .orElseThrow(() -> new ItemNotFoundException(id));
+
+    // Direct mutation - NO VALIDATION
+    existingItem.setName(itemDTO.getName());
+    existingItem.setQuantity(itemDTO.getQuantity());
+    existingItem.setDescription(itemDTO.getDescription());
+
+    Item updatedItem = itemRepository.save(existingItem);
+    return convertToDTO(updatedItem);
+}
+```
+
+TARGET (Aggregate Behavior):
+```java
+// UpdateItemUseCase.java
+@Transactional
+public ItemDTO execute(UpdateItemCommand command) {
+    ItemId itemId = ItemId.of(command.id());
+    Item item = itemRepository.findById(itemId)
+        .orElseThrow(() -> new ItemNotFoundException(itemId));
+
+    // Domain method handles validation and events
+    item.updateDetails(
+        ItemName.of(command.name()),
+        Quantity.of(command.quantity()),
+        ItemDescription.of(command.description())
+    );
+
+    itemRepository.save(item);
+
+    item.getDomainEvents().forEach(eventPublisher::publishEvent);
+    item.clearDomainEvents();
+
+    return toDTO(item);
+}
+
+// Item.java (domain aggregate)
+public void updateDetails(ItemName newName, Quantity newQuantity, ItemDescription newDescription) {
+    validateInvariants(newName, newQuantity, newDescription);
+
+    boolean changed = !this.name.equals(newName) ||
+                     !this.quantity.equals(newQuantity) ||
+                     !this.description.equals(newDescription);
+
+    if (changed) {
+        this.name = newName;
+        this.quantity = newQuantity;
+        this.description = newDescription;
+        registerEvent(new ItemUpdated(this.id, newName, newQuantity, newDescription));
+    }
+}
+```
+
+BENEFITS:
+✅ Invariant validation before mutation
+✅ Domain event published only when changed
+✅ No setters exposed (controlled mutation)
+✅ Business logic in domain, not service
+
+EXAMPLE 3: REPOSITORY USAGE
+----------------------------
+
+CURRENT (Infrastructure Leakage):
+```java
+// ItemRepository.java - Spring Data directly
+@Repository
+public interface ItemRepository extends JpaRepository<Item, Long> {
+}
+
+// ItemService.java
+Item item = itemRepository.save(new Item(...));
+```
+
+TARGET (Domain Abstraction):
+```java
+// domain/repository/ItemRepository.java - Domain contract
+public interface ItemRepository {
+    void save(Item item);
+    Optional<Item> findById(ItemId id);
+    List<Item> findAll();
+    void delete(ItemId id);
+}
+
+// infrastructure/persistence/JpaItemRepositoryAdapter.java
+@Repository
+@RequiredArgsConstructor
+public class JpaItemRepositoryAdapter implements ItemRepository {
+    private final SpringDataItemRepository jpaRepository;
+    private final ItemMapper mapper;
+
+    @Override
+    public void save(Item item) {
+        ItemJpaEntity entity = mapper.toEntity(item);
+        jpaRepository.save(entity);
+    }
+
+    @Override
+    public Optional<Item> findById(ItemId id) {
+        return jpaRepository.findById(id.getValue())
+            .map(mapper::toDomain);
+    }
+}
+
+// Use case
+itemRepository.save(item);  // Works with domain aggregate
+```
+
+BENEFITS:
+✅ Domain layer isolated from infrastructure
+✅ Can swap persistence technology without affecting domain
+✅ Repository works with domain types (ItemId, not Long)
+✅ Explicit mapping between domain and persistence models
+
+================================================================================
+7. CRITICAL FILES REQUIRING CHANGES
+================================================================================
+
+7.1 FILES TO MODIFY
+-------------------
+
+| File Path | Current Lines | Changes Required | Phase |
+|-----------|---------------|------------------|-------|
+| common/.../valueobject/ItemName.java | ~3 | Add validation in compact constructor | 1 |
+| common/.../valueobject/Quantity.java | ~10 | Add validation in factory method | 1 |
+| common/.../valueobject/ItemDescription.java | ~3 | Add validation in compact constructor | 1 |
+| Items/.../domain/Item.java | ~15 | Add factory, update, delete methods, validation | 2 |
+| Items/.../controller/ItemsController.java | ~80 | Update to use application use cases | 6 |
+
+7.2 FILES TO CREATE
+-------------------
+
+| File Path | Purpose | Phase |
+|-----------|---------|-------|
+| Items/.../application/CreateItemCommand.java | Command DTO | 3 |
+| Items/.../application/CreateItemUseCase.java | Use case | 3 |
+| Items/.../application/UpdateItemCommand.java | Command DTO | 3 |
+| Items/.../application/UpdateItemUseCase.java | Use case | 3 |
+| Items/.../application/DeleteItemCommand.java | Command DTO | 3 |
+| Items/.../application/DeleteItemUseCase.java | Use case | 3 |
+| Items/.../application/GetItemQuery.java | Query | 3 |
+| Items/.../application/GetAllItemsQuery.java | Query | 3 |
+| Items/.../domain/repository/ItemRepository.java | Domain contract | 4 |
+| Items/.../infrastructure/persistence/ItemJpaEntity.java | JPA entity | 5 |
+| Items/.../infrastructure/persistence/ItemMapper.java | Mapper | 5 |
+| Items/.../infrastructure/persistence/JpaItemRepositoryAdapter.java | Adapter | 5 |
+| Items/.../infrastructure/persistence/SpringDataItemRepository.java | Spring Data | 5 |
+
+7.3 FILES TO DELETE
+-------------------
+
+| File Path | Reason | Phase |
+|-----------|--------|-------|
+| Items/.../service/ItemService.java | Replaced by use cases | 7 |
+| Items/.../entity/Item.java | Replaced by infrastructure ItemJpaEntity | 7 |
+| Items/.../repository/ItemRepository.java | Replaced by domain repository + adapter | 7 |
+
+7.4 FILES TO RENAME
+-------------------
+
+| Old Path | New Path | Reason | Phase |
+|----------|----------|--------|-------|
+| Items/.../entity/Item.java | Items/.../infrastructure/persistence/ItemJpaEntity.java | Clarify it's JPA model | 5 |
+
+================================================================================
+8. BOUNDED CONTEXT DEFINITION
+================================================================================
+
+BOUNDED CONTEXT NAME: "Item Catalog Management"
+
+DESCRIPTION:
+Manages the product catalog for the online shop. Handles adding, updating,
+and removing items from the catalog. Does not handle pricing, ordering,
+or inventory management (those are separate bounded contexts).
+
+UBIQUITOUS LANGUAGE:
+--------------------
+
+TERMS:
+- Item: A product in the catalog
+- Catalog: Collection of all items
+- Item Name: Display name of the product
+- Quantity: Current stock level
+- Description: Product details/description
+- Add to Catalog: Create new item
+- Update Item Details: Change item attributes
+- Remove from Catalog: Delete item
+
+AGGREGATES:
+-----------
+
+1. Item (Aggregate Root)
+   - Identity: ItemId
+   - Attributes: ItemName, Quantity, ItemDescription
+   - Invariants:
+     * Name cannot be empty
+     * Quantity must be >= 0
+     * Description is optional
+   - Behaviors:
+     * createNew(): Add item to catalog
+     * updateDetails(): Change item attributes
+     * markAsDeleted(): Remove from catalog
+
+VALUE OBJECTS:
+--------------
+
+1. ItemId: Strongly-typed identifier
+2. ItemName: Product name with validation
+3. Quantity: Stock level with business rules
+4. ItemDescription: Product details
+
+DOMAIN EVENTS:
+--------------
+
+1. ItemCreated: Published when item added to catalog
+2. ItemUpdated: Published when item details change
+3. ItemDeleted: Published when item removed from catalog
+
+EXTERNAL INTEGRATION POINTS:
+-----------------------------
+
+PUBLISHES EVENTS TO:
+- Inventory Management context (for stock tracking)
+- Pricing context (for price updates)
+- Search context (for catalog indexing)
+
+SUBSCRIBES TO EVENTS FROM:
+- (None currently)
+
+REPOSITORY CONTRACTS:
+---------------------
+
+1. ItemRepository
+   - save(Item): Persist item
+   - findById(ItemId): Retrieve item
+   - findAll(): Retrieve all items
+   - delete(ItemId): Remove item
+
+APPLICATION SERVICES (Use Cases):
+---------------------------------
+
+COMMANDS:
+1. CreateItemCommand -> CreateItemUseCase
+2. UpdateItemCommand -> UpdateItemUseCase
+3. DeleteItemCommand -> DeleteItemUseCase
+
+QUERIES:
+1. GetItemQuery -> GetItemQueryHandler
+2. GetAllItemsQuery -> GetAllItemsQueryHandler
+
+================================================================================
+9. TESTING STRATEGY
+================================================================================
+
+9.1 UNIT TESTS
+--------------
+
+TARGET COVERAGE: >90%
+
+DOMAIN LAYER:
+- Test value object validation (ItemName, Quantity, ItemDescription)
+- Test aggregate factory methods (createNew)
+- Test aggregate behaviors (updateDetails, markAsDeleted)
+- Test invariant validation
+- Test domain event registration
+
+APPLICATION LAYER:
+- Test use cases with mocked repositories
+- Test command/query handling
+- Test event publishing
+- Test error scenarios
+
+EXAMPLE:
+```java
+@Test
+void createNew_shouldRegisterItemCreatedEvent() {
+    ItemName name = ItemName.of("Test Item");
+    Quantity quantity = Quantity.of(10);
+    ItemDescription description = ItemDescription.of("Test description");
+
+    Item item = Item.createNew(name, quantity, description);
+
+    List<DomainEvent> events = item.getDomainEvents();
+    assertThat(events).hasSize(1);
+    assertThat(events.get(0)).isInstanceOf(ItemCreated.class);
+}
+
+@Test
+void updateDetails_shouldNotRegisterEventWhenNoChange() {
+    Item item = createTestItem();
+
+    item.updateDetails(item.getName(), item.getQuantity(), item.getDescription());
+
+    assertThat(item.getDomainEvents()).isEmpty();
+}
+```
+
+9.2 INTEGRATION TESTS
+---------------------
+
+INFRASTRUCTURE LAYER:
+- Test repository adapter with real database (Testcontainers)
+- Test mapping between domain and JPA entities
+- Test transaction boundaries
+
+EXAMPLE:
+```java
+@SpringBootTest
+@Testcontainers
+class JpaItemRepositoryAdapterIntegrationTest {
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17");
+
+    @Autowired
+    private ItemRepository itemRepository;
+
+    @Test
+    void save_shouldPersistAndRetrieve() {
+        Item item = Item.createNew(
+            ItemName.of("Test Item"),
+            Quantity.of(5),
+            ItemDescription.of("Test")
+        );
+
+        itemRepository.save(item);
+        Optional<Item> retrieved = itemRepository.findById(item.getId());
+
+        assertThat(retrieved).isPresent();
+        assertThat(retrieved.get().getName()).isEqualTo(item.getName());
+    }
+}
+```
+
+9.3 E2E TESTS
+-------------
+
+EXISTING TESTS: Update to work with new architecture
+NEW TESTS: Verify domain event publishing
+
+EXAMPLE:
+```java
+@Test
+void createItem_shouldPublishItemCreatedEvent() {
+    // Arrange
+    ItemDTO itemDTO = new ItemDTO(null, "New Item", 10, "Description");
+
+    // Act
+    ResponseEntity<ItemDTO> response = restTemplate.postForEntity(
+        "/api/v1/items",
+        itemDTO,
+        ItemDTO.class
+    );
+
+    // Assert
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+    // Verify event was published (check event listener or message broker)
+    // await().atMost(5, SECONDS).until(() -> eventListenerCapturedEvent());
+}
+```
+
+9.4 TEST EXECUTION PLAN
+------------------------
+
+BEFORE MIGRATION:
+1. Run all existing tests
+2. Capture baseline coverage (should be >90%)
+
+DURING MIGRATION (after each phase):
+1. Run all tests
+2. Fix any failures
+3. Maintain or improve coverage
+
+AFTER MIGRATION:
+1. Run full test suite (unit + integration + e2e)
+2. Verify coverage >90%
+3. Verify all domain behaviors tested
+4. Verify event publishing tested
+
+COMMANDS:
+```bash
+# Run all tests
+./mvnw.cmd clean test
+
+# Run with coverage
+./mvnw.cmd clean test jacoco:report
+
+# View coverage report
+target/site/jacoco/index.html
+
+# Run e2e tests (from root, requires docker compose up)
+cd e2e-tests && ./mvnw.cmd clean test
+```
+
+================================================================================
+10. RISK ASSESSMENT & MITIGATION
+================================================================================
+
+10.1 IDENTIFIED RISKS
+---------------------
+
+RISK #1: Dual Item Classes Cause Confusion
+SEVERITY: Medium
+PROBABILITY: High (already happening)
+IMPACT: Developer confusion, bugs, maintenance issues
+
+MITIGATION:
+- Delete one class early in migration (Phase 5)
+- Clear documentation of which class to use
+- Use distinct names: Item (domain) vs ItemJpaEntity (persistence)
+
+RISK #2: Breaking API Contract
+SEVERITY: High
+PROBABILITY: Low (if careful)
+IMPACT: Frontend breaks, integration issues
+
+MITIGATION:
+- Keep DTOs unchanged
+- Maintain same REST API signatures
+- Run e2e tests after each phase
+- Test with frontend before deploying
+
+RISK #3: Event Publishing Bugs
+SEVERITY: Medium
+PROBABILITY: Medium
+IMPACT: Events lost, inconsistent state
+
+MITIGATION:
+- Add integration tests for event publishing
+- Use Spring's ApplicationEventPublisher (proven)
+- Log all published events
+- Consider transactional outbox pattern (future)
+
+RISK #4: Performance Degradation
+SEVERITY: Low
+PROBABILITY: Low
+IMPACT: Slower responses
+
+MITIGATION:
+- Benchmark before/after (e.g., load test)
+- Mapping overhead is minimal (value objects are lightweight)
+- Use profiler if issues detected
+- Optimize only if needed (premature optimization is evil)
+
+RISK #5: Repository Abstraction Overhead
+SEVERITY: Low
+PROBABILITY: Low
+IMPACT: More code to maintain
+
+MITIGATION:
+- Follow proven pattern (already used in enterprise apps)
+- Separation of concerns worth the overhead
+- Easier to test with abstraction
+- Future-proof for changing persistence
+
+RISK #6: Team Unfamiliarity with DDD
+SEVERITY: Medium
+PROBABILITY: Medium (solo project, but future team members)
+IMPACT: Slower development, incorrect usage
+
+MITIGATION:
+- Document patterns in docs/architecture/PATTERNS.md
+- Add code comments explaining DDD concepts
+- Create ADR documenting decisions
+- Use this migration as template for other services
+
+10.2 ROLLBACK PLAN
+------------------
+
+IF MIGRATION FAILS:
+1. Git revert to pre-migration commit
+2. All changes in feature branch, main unaffected
+
+CHECKPOINTS:
+- After Phase 2: Basic domain behavior working
+- After Phase 5: Infrastructure layer working
+- After Phase 6: Full integration working
+
+TESTING GATES:
+- All existing tests must pass
+- No regressions in e2e tests
+- Coverage maintained >90%
+
+10.3 SUCCESS CRITERIA
+---------------------
+
+MIGRATION SUCCESSFUL IF:
+✅ All unit tests passing
+✅ All integration tests passing
+✅ All e2e tests passing
+✅ Test coverage >90%
+✅ Domain events published correctly
+✅ No API contract changes (backward compatible)
+✅ Application starts without errors
+✅ Documentation updated
+✅ Code review approved
+
+================================================================================
+11. IMPLEMENTATION CHECKLIST
+================================================================================
+
+PRE-MIGRATION:
+□ All tests passing
+□ Git branch created: feature/items-service-ddd-migration
+□ Baseline test coverage measured
+
+PHASE 1: VALUE OBJECT VALIDATION
+□ ItemName validation added
+□ Quantity validation added
+□ ItemDescription validation added
+□ Unit tests written for each
+□ All tests passing
+
+PHASE 2: DOMAIN BEHAVIOR
+□ Item factory method created
+□ Item.updateDetails() method created
+□ Item.markAsDeleted() method created
+□ Invariant validation added
+□ Domain events registered
+□ Unit tests written
+□ All tests passing
+
+PHASE 3: APPLICATION SERVICES
+□ application/ package created
+□ Commands created (Create, Update, Delete)
+□ Use cases created
+□ Event publishing implemented
+□ Unit tests written
+□ All tests passing
+
+PHASE 4: DOMAIN REPOSITORY INTERFACE
+□ domain/repository/ package created
+□ ItemRepository interface defined
+□ Methods use domain types (ItemId, not Long)
+
+PHASE 5: INFRASTRUCTURE LAYER
+□ infrastructure/persistence/ package created
+□ entity/Item.java renamed to ItemJpaEntity.java
+□ ItemMapper created
+□ JpaItemRepositoryAdapter created
+□ SpringDataItemRepository created
+□ Integration tests written
+□ All tests passing
+
+PHASE 6: CONTROLLER UPDATE
+□ Controller updated to use use cases
+□ API contract unchanged
+□ All tests passing
+
+PHASE 7: CLEANUP
+□ ItemService.java deleted
+□ Old entity/Item.java deleted
+□ Old repository/ItemRepository.java deleted
+□ All tests passing
+□ Application starts successfully
+
+PHASE 8: EVENT PUBLISHING
+□ Event listeners created (for testing)
+□ Events published in use cases
+□ Integration tests verify event publishing
+□ All tests passing
+
+PHASE 9: COMPREHENSIVE TESTING
+□ All domain unit tests written
+□ All application unit tests written
+□ All infrastructure integration tests written
+□ Coverage >90%
+□ All tests passing
+
+PHASE 10: DOCUMENTATION & VERIFICATION
+□ All unit tests passing
+□ All integration tests passing
+□ All e2e tests passing
+□ JaCoCo coverage >90%
+□ docs/architecture/PATTERNS.md updated
+□ ADR created (if needed)
+□ Code review completed
+□ Merge to main
+
+================================================================================
+12. REFERENCES
+================================================================================
+
+PROJECT FILES:
+- Current domain model: Items/src/main/java/com/onlineshop/items/domain/Item.java
+- Current JPA entity: Items/src/main/java/com/onlineshop/items/entity/Item.java
+- Current service: Items/src/main/java/com/onlineshop/items/service/ItemService.java
+- Common AggregateRoot: common/src/main/java/com/onlineshop/common/domain/entity/AggregateRoot.java
+- Value objects: common/src/main/java/com/onlineshop/common/domain/valueobject/
+
+DOCUMENTATION:
+- Project guide: CLAUDE.md
+- Architecture overview: docs/architecture/OVERVIEW.md
+- DDD patterns: docs/architecture/PATTERNS.md
+- Java style guide: docs/style-guides/JAVA.md
+- Testing strategy: docs/testing/STRATEGY.md
+
+EXTERNAL RESOURCES:
+- Domain-Driven Design (Eric Evans)
+- Implementing Domain-Driven Design (Vaughn Vernon)
+- Google Java Style Guide: https://google.github.io/styleguide/javaguide.html
+
+================================================================================
+END OF ITEMS SERVICE DDD MIGRATION ROADMAP
+================================================================================
+
+Generated: 2025-12-24
+Version: 1.0
+Author: Claude Code (Investigation Agent)
+Status: Ready for Implementation

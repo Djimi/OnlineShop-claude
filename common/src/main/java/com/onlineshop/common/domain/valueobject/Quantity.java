@@ -1,15 +1,14 @@
 package com.onlineshop.common.domain.valueobject;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+public record Quantity(int amount) {
 
-@Getter
-@RequiredArgsConstructor
-public class Quantity {
-    private final int amount;
+    public Quantity {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Quantity cannot be negative");
+        }
+    }
 
     public boolean isGreaterThanZero() {
         return amount > 0;
     }
-
 }

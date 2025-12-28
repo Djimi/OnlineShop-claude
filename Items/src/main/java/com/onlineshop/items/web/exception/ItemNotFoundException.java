@@ -1,4 +1,4 @@
-package com.onlineshop.items.exception;
+package com.onlineshop.items.web.exception;
 
 /**
  * Thrown when a requested item is not found.

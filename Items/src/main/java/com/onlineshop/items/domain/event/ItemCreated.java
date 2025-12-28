@@ -1,8 +1,21 @@
 package com.onlineshop.items.domain.event;
 
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.common.domain.event.BaseDomainEvent;
+import com.onlineshop.common.domain.valueobject.ItemDescription;
+import com.onlineshop.common.domain.valueobject.ItemId;
+import com.onlineshop.common.domain.valueobject.ItemName;
+import com.onlineshop.common.domain.valueobject.Quantity;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
-import java.time.Instant;
+@Getter
+@RequiredArgsConstructor
+@ToString(callSuper = true)
+public final class ItemCreated extends BaseDomainEvent {
 
-public record ItemCreated(Item item, Instant createdAt) {
+    private final ItemId itemId;
+    private final ItemName name;
+    private final Quantity quantity;
+    private final ItemDescription description;
 }

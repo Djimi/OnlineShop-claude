@@ -1,6 +1,6 @@
-package com.onlineshop.items.exception;
+package com.onlineshop.items.web.exception;
 
-import com.onlineshop.items.dto.ErrorResponse;
+import com.onlineshop.items.web.dto.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
