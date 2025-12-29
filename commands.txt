@@ -1,0 +1,79 @@
+docker compose up -d --build auth-service
+
+
+
+----------------------
+
+---- e2e tests ----
+
+cd e2e-tests
+./mvnw.cmd test
+Or with the full Java path if needed:
+cd e2e-tests
+JAVA_HOME="/c/Program Files/Java/jdk-25" ./mvnw.cmd test
+Other useful commands:
+# Run a specific test class
+./mvnw.cmd test -Dtest=ItemsE2ETest
+
+# Run a specific test method
+./mvnw.cmd test -Dtest=ItemsE2ETest#testAuthenticatedItemsFlow
+
+# Run with verbose output
+./mvnw.cmd test -X
+
+# Skip tests (just compile)
+./mvnw.cmd test-compile
+
+# Clean and run tests
+./mvnw.cmd clean test
+----------------------------------------
+
+maven
+
+# Core model
+Lifecycle → Phase → Plugin → Goal
+
+# Common lifecycles
+default  = build
+clean    = cleanup
+site     = docs
+
+# Key phases (default lifecycle)
+compile
+test
+package
+install
+deploy
+
+# Run a phase (runs all previous phases)
+mvn package
+mvn install
+
+# Run a specific goal
+mvn spring-boot:run
+mvn compiler:compile
+
+# See why something runs
+mvn -X package
+
+# Inspect plugin goals
+mvn help:describe -Dplugin=org.apache.maven.plugins:maven-compiler-plugin -Ddetail
+
+# Inspect phase bindings
+mvn help:describe -Dcmd=package -Ddetail
+
+# See full resolved configuration
+mvn help:effective-pom
+
+# Dependency debugging
+mvn dependency:tree
+
+# Skip tests
+mvn package -DskipTests
+mvn package -Dmaven.test.skip=true
+
+# Use wrapper (recommended)
+./mvnw package
+
+
+mvn buildplan:list-phase -Dphase=compile

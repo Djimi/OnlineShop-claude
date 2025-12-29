@@ -82,7 +82,7 @@ class ItemsE2ETest extends BaseTest {
 
         // Step 4: Get the first item from the list (if there are items)
         if (!items.isEmpty()) {
-            Integer firstItemId = (Integer) items.get(0).get("id");
+            String firstItemId = (String) items.get(0).get("id");
             assertNotNull(firstItemId, "First item ID should not be null");
 
             given()
