@@ -2,7 +2,7 @@ package com.onlineshop.items.application.usecase;
 
 import com.onlineshop.common.domain.valueobject.ItemId;
 import com.onlineshop.items.application.command.DeleteItemCommand;
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
 import com.onlineshop.items.web.exception.ItemNotFoundException;
 import org.slf4j.Logger;

@@ -1,8 +1,10 @@
 package com.onlineshop.common.domain.valueobject;
 
-public class ItemId extends BaseId<Long> {
+import java.util.UUID;
 
-    public ItemId(Long value) {
+public class ItemId extends BaseId<UUID> {
+
+    public ItemId(UUID value) {
         super(value);
     }
 }

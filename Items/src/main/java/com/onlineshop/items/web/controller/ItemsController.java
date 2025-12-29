@@ -1,4 +1,4 @@
-package com.onlineshop.items.web;
+package com.onlineshop.items.web.controller;
 
 import com.onlineshop.items.application.command.CreateItemCommand;
 import com.onlineshop.items.application.command.UpdateItemCommand;
@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/items")
@@ -43,7 +44,7 @@ public class ItemsController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GetItemResponse> getItemById(@PathVariable Long id) {
+    public ResponseEntity<GetItemResponse> getItemById(@PathVariable UUID id) {
         return ResponseEntity.ok(getItemUseCase.execute(new GetItemQuery(id)));
     }
 
@@ -53,7 +54,7 @@ public class ItemsController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable Long id, @RequestBody UpdateItemCommand command) {
+    public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable UUID id, @RequestBody UpdateItemCommand command) {
         return ResponseEntity.ok(updateItemUseCase.execute(command));
     }
 }

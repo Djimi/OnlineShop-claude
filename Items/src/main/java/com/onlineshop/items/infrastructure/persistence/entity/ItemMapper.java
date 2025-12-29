@@ -4,7 +4,7 @@ import com.onlineshop.common.domain.valueobject.ItemDescription;
 import com.onlineshop.common.domain.valueobject.ItemId;
 import com.onlineshop.common.domain.valueobject.ItemName;
 import com.onlineshop.common.domain.valueobject.Quantity;
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.items.domain.aggregateroots.Item;
 
 import org.springframework.stereotype.Component;
 

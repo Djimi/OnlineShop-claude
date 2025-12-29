@@ -2,6 +2,8 @@ package com.onlineshop.items.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 
+import java.util.UUID;
+
 /**
  * JPA entity for Item persistence.
  * This is an infrastructure concern, separate from the domain model.
@@ -11,8 +13,7 @@ import jakarta.persistence.*;
 public class ItemJpaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -26,14 +27,14 @@ public class ItemJpaEntity {
     protected ItemJpaEntity() {
     }
 
-    public ItemJpaEntity(Long id, String name, int quantity, String description) {
+    public ItemJpaEntity(UUID id, String name, int quantity, String description) {
         this.id = id;
         this.name = name;
         this.quantity = quantity;
         this.description = description;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 

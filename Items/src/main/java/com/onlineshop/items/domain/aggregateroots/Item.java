@@ -1,4 +1,4 @@
-package com.onlineshop.items.domain;
+package com.onlineshop.items.domain.aggregateroots;
 
 import com.onlineshop.common.domain.entity.AggregateRoot;
 import com.onlineshop.common.domain.valueobject.ItemDescription;
@@ -29,11 +29,14 @@ public class Item extends AggregateRoot<ItemId> {
     }
 
     /**
-     * Factory method for creating a new item (without ID - will be assigned by persistence).
+     * Factory method for creating a new item with a pre-assigned ID.
      */
-    public static Item createNew(ItemName name, Quantity quantity, ItemDescription description) {
-        var item = new Item(null, name, quantity, description);
-        item.registerEvent(new ItemCreated(null, name, quantity, description));
+    public static Item createNew(ItemId id, ItemName name, Quantity quantity, ItemDescription description) {
+        if (id == null) {
+            throw new IllegalArgumentException("Item ID is required");
+        }
+        var item = new Item(id, name, quantity, description);
+        item.registerEvent(new ItemCreated(id, name, quantity, description));
         return item;
     }
 

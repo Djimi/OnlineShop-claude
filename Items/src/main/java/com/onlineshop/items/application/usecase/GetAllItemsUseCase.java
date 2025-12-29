@@ -2,7 +2,7 @@ package com.onlineshop.items.application.usecase;
 
 import com.onlineshop.items.application.dto.GetItemResponse;
 import com.onlineshop.items.application.query.GetAllItemsQuery;
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

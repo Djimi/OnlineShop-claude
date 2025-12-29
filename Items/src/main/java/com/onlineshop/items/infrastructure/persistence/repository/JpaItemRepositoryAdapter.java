@@ -1,7 +1,7 @@
 package com.onlineshop.items.infrastructure.persistence.repository;
 
 import com.onlineshop.common.domain.valueobject.ItemId;
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
 import com.onlineshop.items.infrastructure.persistence.entity.ItemJpaEntity;
 import com.onlineshop.items.infrastructure.persistence.entity.ItemMapper;

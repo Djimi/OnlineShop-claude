@@ -1,6 +1,6 @@
 -- Create items table if it doesn't exist
 CREATE TABLE IF NOT EXISTS items (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     quantity INTEGER NOT NULL,
     description VARCHAR(500)

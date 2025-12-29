@@ -1,7 +1,9 @@
 package com.onlineshop.items.application.dto;
 
+import java.util.UUID;
+
 public record GetItemResponse(
-    Long id,
+    UUID id,
     String name,
     int quantity,
     String description

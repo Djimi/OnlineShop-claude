@@ -6,7 +6,7 @@ import com.onlineshop.common.domain.valueobject.ItemName;
 import com.onlineshop.common.domain.valueobject.Quantity;
 import com.onlineshop.items.application.command.UpdateItemCommand;
 import com.onlineshop.items.application.dto.UpdateItemResponse;
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
 import com.onlineshop.items.web.exception.ItemNotFoundException;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
 package com.onlineshop.items.domain.repository;
 
 import com.onlineshop.common.domain.valueobject.ItemId;
-import com.onlineshop.items.domain.Item;
+import com.onlineshop.items.domain.aggregateroots.Item;
 
 import java.util.List;
 import java.util.Optional;
