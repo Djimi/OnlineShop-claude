@@ -3,7 +3,7 @@ package com.onlineshop.auth.service;
 import com.onlineshop.auth.dto.*;
 import com.onlineshop.auth.entity.Session;
 import com.onlineshop.auth.entity.User;
-import com.onlineshop.auth.exception.InvalidCredentialsException;
+import com.onlineshop.auth.exception.InvalidUsernameOrPasswordException;
 import com.onlineshop.auth.exception.InvalidTokenException;
 import com.onlineshop.auth.exception.UserAlreadyExistsException;
 import com.onlineshop.auth.repository.SessionRepository;
@@ -62,10 +62,10 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(InvalidCredentialsException::new);
+                .orElseThrow(InvalidUsernameOrPasswordException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new InvalidCredentialsException();
+            throw new InvalidUsernameOrPasswordException();
         }
 
         String token = generateToken();

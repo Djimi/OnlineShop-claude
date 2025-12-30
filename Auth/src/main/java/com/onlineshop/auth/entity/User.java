@@ -28,14 +28,11 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    // @Column(name = "creat
-    // ed_at", insertable = false, updatable = false)
-    // @Generated(event = EventType.INSERT, value = { "" })
     @Column(name = "created_at")
-    @CreationTimestamp(source = SourceType.DB)
+    @CreationTimestamp(source = SourceType.VM)
     private Instant createdAt;
 
     @Column(name = "updated_at", insertable = false, updatable = false)
-    @UpdateTimestamp(source = SourceType.DB)
+    @UpdateTimestamp(source = SourceType.VM)
     private Instant updatedAt;
 }

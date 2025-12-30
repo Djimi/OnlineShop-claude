@@ -2,7 +2,7 @@
 
 ## Philosophy
 
-We follow **Test-Driven Development (TDD)**: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.
+We follow **Test-Driven Development (TDD)** when writing new code: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.
 
 Tests provide confidence to refactor, deploy, and evolve the system. We optimize for **fast feedback loops**: unit tests run in milliseconds, integration tests in seconds, E2E tests in minutes. The testing pyramid reflects this—many fast tests at the bottom, few slow tests at the top.
 
@@ -89,11 +89,25 @@ Resist the urge to write production code without a failing test first. The disci
 
 ## References
 
-| What | Where |
+<!-- | What | Where |
 |------|-------|
 | Running tests | [CLAUDE.md](../../CLAUDE.md) — Essential Commands |
 | Unit test example | `Items/src/test/java/**/ItemServiceTest.java` |
 | Integration test example | `Items/src/test/java/**/*IntegrationTest.java` |
 | E2E tests | `e2e-tests/src/test/java/` |
 | JaCoCo configuration | Service `pom.xml` files — search for `jacoco-maven-plugin` |
-| Test data utilities | `*/src/test/java/**/testutil/` |
+| Test data utilities | `*/src/test/java/**/testutil/` | -->
+
+### Running Tests
+
+```bash
+# Unit + Integration (per service), should be run from the respective service folder
+./mvnw.cmd clean test
+
+# E2E (from e2e-tests/, requires docker compose up before or docker)
+./mvnw.cmd clean test
+
+# With coverage report
+./mvnw.cmd clean test jacoco:report
+# Report at: target/site/jacoco/index.html
+```
