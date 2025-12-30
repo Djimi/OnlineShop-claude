@@ -5,7 +5,7 @@ CQRS
 Eventsourcing
 TransactionOutbox
 
-Analytics store (warehouse solution)
+Create Analytics store (warehouse solution)
 
 JWT
 

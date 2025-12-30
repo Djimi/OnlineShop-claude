@@ -39,5 +39,19 @@ See [docs/API_DESIGN.md](./docs/API_DESIGN.md) for:
 - Full details: [docs/style-guides/TYPESCRIPT.md](./docs/style-guides/TYPESCRIPT.md) -->
 
 ## Testing Strategy
-See [docs/TESTING_STRATEGY.md](./docs/testing/STRATEGY.md) for full details.
+
+See [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md) for full details.
+
+## Debug Info
+
+See [docs/DEBUG_INFO.md](./docs/DEBUG_INFO.md) for:
+- Troubleshooting guides
+- Common issues and solutions
+
+## Future Ideas
+
+See [docs/CONCEPTS_TO_TRY.md](./docs/CONCEPTS_TO_TRY.md) for:
+- Experimental concepts to explore
+- Future improvements
+
 

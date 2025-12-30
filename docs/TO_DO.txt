@@ -1,2 +1,0 @@
-- Improve  "References" in test strategy md
-- check this: https://www.reddit.com/r/ClaudeAI/comments/1i4c6jx/my_guide_to_using_styles_effectively/
