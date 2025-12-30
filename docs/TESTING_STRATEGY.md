@@ -1,5 +1,9 @@
 # Testing Strategy
 
+> Important 
+>
+>For all cases where code can be improved to be more testable, that should be the proposed approach instead of work around the problems!
+
 ## Philosophy
 
 We follow **Test-Driven Development (TDD)** when writing new code: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.

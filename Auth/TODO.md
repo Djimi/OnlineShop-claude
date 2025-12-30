@@ -36,3 +36,19 @@ management:
       enabled: true
 
 ----------------
+
+We should add time check in the query, so we don't get expired sessions
+
+----------
+
+When we check for login we should check with case sensitivity, when we check for registration we should check withouth case sensitivity
+
+---------
+
+Add normaliztion for username and store normalized_uesrname
+
+
+String normalized = Normalizer.normalize(request.getUsername().trim(), Normalizer.Form.NFKC)
+.toLowerCase(Locale.ROOT);
+
+------------

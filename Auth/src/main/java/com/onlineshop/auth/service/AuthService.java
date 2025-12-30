@@ -25,16 +25,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SecureRandom secureRandom;
     private final long sessionExpirationSeconds;
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-
     public AuthService(UserRepository userRepository, SessionRepository sessionRepository,
-            PasswordEncoder passwordEncoder,
+            PasswordEncoder passwordEncoder, SecureRandom secureRandom,
             @Value("${session.expiration:3600}") long sessionExpirationSeconds) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.secureRandom = secureRandom;
         this.sessionExpirationSeconds = sessionExpirationSeconds;
     }
 
@@ -96,7 +96,7 @@ public class AuthService {
         Session session = sessionRepository.findByTokenHash(tokenHash)
                 .orElseThrow(InvalidTokenException::new);
 
-        if (session.isExpired()) {
+        if (session.isExpired(Instant.now())) {
             throw new InvalidTokenException();
         }
 
@@ -112,7 +112,7 @@ public class AuthService {
 
     private String generateToken() {
         byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
+        secureRandom.nextBytes(bytes);
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             sb.append(String.format("%02x", b));

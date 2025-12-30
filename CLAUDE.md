@@ -2,6 +2,21 @@
 
 > This file helps Claude understand and work efficiently with the OnlineShop project.
 
+---
+
+## IMPORTANT: Documentation Maintenance
+
+**When making ANY changes to the project, you MUST update:**
+
+1. This file (`CLAUDE.md`) if the change affects project-wide documentation
+2. All referenced documentation files affected by the change (see sections below)
+3. All files referenced by those files (recursive update through the entire reference chain)
+4. All service-level `CLAUDE.md` files in each microservice directory (e.g., `Auth/CLAUDE.md`, `Items/CLAUDE.md`, etc.)
+
+**Documentation must always stay in sync. Propagate updates through the entire documentation tree.**
+
+---
+
 ## Quick Reference
 
 See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) for:
@@ -54,4 +69,7 @@ See [docs/CONCEPTS_TO_TRY.md](./docs/CONCEPTS_TO_TRY.md) for:
 - Experimental concepts to explore
 - Future improvements
 
+## Planning
 
+- Add all plans in [planning](./planning/) folder
+- Use the following name pattern `<date>-<feature-name>-PLAN.md`, for example `2025-12-25-migrating-auth-service-to-ddd-PLAN.md`

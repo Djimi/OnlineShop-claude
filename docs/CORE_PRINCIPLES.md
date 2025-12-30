@@ -1,7 +1,7 @@
 # Core Principles
 
 **IMPORTANT:** The major goal of the project is to learn new technologies and architectural patterns, so use all opportunities to do that!
-See [PROJECTS_OVERVIEW.md](./CONCEPTS_TO_TRY.md.md) for examples (but don't limit to these only)
+See [PROJECTS_OVERVIEW.md](./CONCEPTS_TO_TRY.md) for examples (but don't limit to these only)
 
 ## Development Philosophy
 
