@@ -1,0 +1,27 @@
+{
+  "description": "Test users for performance testing. These should be pre-seeded in the database.",
+  "users": [
+    {
+      "username": "perftest_user_1",
+      "password": "PerfTest123!"
+    },
+    {
+      "username": "perftest_user_2",
+      "password": "PerfTest123!"
+    },
+    {
+      "username": "perftest_user_3",
+      "password": "PerfTest123!"
+    },
+    {
+      "username": "perftest_user_4",
+      "password": "PerfTest123!"
+    },
+    {
+      "username": "perftest_user_5",
+      "password": "PerfTest123!"
+    }
+  ],
+  "newUserPrefix": "perf_new_user_",
+  "newUserPassword": "NewUser123!"
+}
