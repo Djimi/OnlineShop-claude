@@ -31,12 +31,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
+    @ExceptionHandler(InvalidUsernameOrPasswordException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
-            InvalidCredentialsException ex,
+            InvalidUsernameOrPasswordException ex,
             WebRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .type("https://api.onlineshop.com/errors/invalid-credentials")
+                .type("https://api.onlineshop.com/errors/invalid-username-or-password")
                 .title("Unauthorized")
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .detail(ex.getMessage())
@@ -99,7 +99,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
             WebRequest request) {
-        logger.error("Unexpected error occurred on hitting {}", request.getDescription(false), ex);
+        logger.warn("Unexpected error occurred on hitting {}", request.getDescription(false), ex);
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .type("https://api.onlineshop.com/errors/internal-server-error")
