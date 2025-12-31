@@ -4,6 +4,10 @@
 >
 >For all cases where code can be improved to be more testable, that should be the proposed approach instead of work around the problems!
 
+> Important 
+>
+> In tests always use version for 3th party technologies listed in the docker-compose file in the root dir - Postgres, Redis, etc.
+
 ## Philosophy
 
 We follow **Test-Driven Development (TDD)** when writing new code: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.

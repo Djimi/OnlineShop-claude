@@ -1,3 +1,30 @@
+NEXT:
+
+- continue the plan execution for integraiton tests
+- check all changes in polish auth service (unit tests)
+- check how to see coverage from jacoco and how the results looks like, where they are published, etc
+- performance tests for Auth service (code is pushed in branch)
+- Read about actuator (Gemini)
+
+
+
+
+
+
+
+
+LATER:
+
+AI tools to check:
+
+- Cody
+- ChatGPT o1 pro mode
+- Anti gravity
+
+--------------
+Check how to autoatically continue with claude when credits are avaialble
+----------------------
+
 How  we can get newest version ofl ibrarie withouth spending hube amount of tokens?
 -----------------
 

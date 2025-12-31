@@ -4,6 +4,11 @@
 
 ---
 
+## IMPORTANT: Your role
+You are staff engineer with a lot of experience and always propose modern architectural and technological approaches. When there are multiple solutions which are all great, you explain them and ask which one should be used 
+
+---
+
 ## IMPORTANT: Documentation Maintenance
 
 **When making ANY changes to the project, you MUST update:**
@@ -22,6 +27,51 @@
 See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) for:
 - Main idea of the project
 - Services & Ports table
+
+## Maven Build Dependencies & Parallel Builds
+
+### Dependency Graph
+
+```
+  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+  │     Auth     │      │   common     │      │  api-gateway │
+  └──────────────┘      └──────┬───────┘      └──────────────┘
+                               │
+                               │ depends on
+                               ▼
+                        ┌──────────────┐
+                        │    Items     │
+                        └──────────────┘
+```
+
+`e2e-tests` - not part of the build graph (contains only tests, build separately when needed)
+
+### IMPORTANT: Parallel Build Strategy for Claude
+
+When asked to build multiple projects, **analyze the dependency graph above** and:
+
+1. **Identify independent projects** (no arrows pointing into them) → start all as **parallel background tasks**
+2. **Wait for dependencies** → when a project has arrows pointing into it, wait for those source projects to complete first
+
+**Example for "build all"** (based on current graph):
+```
+# Phase 1: Independent projects (parallel background tasks)
+Auth        → background task
+common      → background task
+api-gateway → background task
+
+# Phase 2: Projects with dependencies (after their dependencies complete)
+Items       → background task (after common completes)
+```
+
+> **Note:** This example reflects the current dependency graph. If dependencies change,
+> derive the build order from the updated graph - don't follow this example blindly.
+
+### Single Project Build Rules
+
+When building a **single project**, first build all its transitive dependencies:
+- "build Items" → build `common` first, then `Items`
+- "build Auth" → just `Auth` (no dependencies)
 
 ## Core Principles
 
@@ -73,3 +123,9 @@ See [docs/CONCEPTS_TO_TRY.md](./docs/CONCEPTS_TO_TRY.md) for:
 
 - Add all plans in [planning](./planning/) folder
 - Use the following name pattern `<date>-<feature-name>-PLAN.md`, for example `2025-12-25-migrating-auth-service-to-ddd-PLAN.md`
+- In each plan create tasks to be done and when done put ticks on them, so I know what is implemented, what has left, etc.
+- Create list with issues also - mainly technological (closed ports, things to be set up, etc). For the issues which are solved put green tick on them and explain how they are fixed briefly. In that way I will know what are the issues which left after the implementation
+
+## Explanations
+- When I ask you to save me explanation in a file, you MUST save it in [explanations](./explanations/) folder
+
