@@ -30,3 +30,9 @@ How  we can get newest version ofl ibrarie withouth spending hube amount of toke
 
 Currently items service is migrated to DDD even though it 
 could be not the best implementation
+
+----------
+
+Migrate error responses to the new spring functionality for them
+
+-------------
