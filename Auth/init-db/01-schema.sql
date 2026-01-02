@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index on username for faster lookups
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 -- Create index on normalized_username for case-insensitive uniqueness checks
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_normalized_username ON users(normalized_username);
 

@@ -97,7 +97,7 @@ public class AuthService {
         Session session = sessionRepository.findByTokenHash(tokenHash)
                 .orElseThrow(InvalidTokenException::new);
 
-        if (session.isExpired(clock.instant())) {
+        if (!session.isValid(clock.instant())) {
             throw new InvalidTokenException();
         }
 

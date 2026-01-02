@@ -1,32 +1,7 @@
 docker compose up -d --build auth-service
 
 
-
-----------------------
-
----- e2e tests ----
-
-cd e2e-tests
-./mvnw.cmd test
-Or with the full Java path if needed:
-cd e2e-tests
-JAVA_HOME="/c/Program Files/Java/jdk-25" ./mvnw.cmd test
-Other useful commands:
-# Run a specific test class
-./mvnw.cmd test -Dtest=ItemsE2ETest
-
-# Run a specific test method
-./mvnw.cmd test -Dtest=ItemsE2ETest#testAuthenticatedItemsFlow
-
-# Run with verbose output
-./mvnw.cmd test -X
-
-# Skip tests (just compile)
-./mvnw.cmd test-compile
-
-# Clean and run tests
-./mvnw.cmd clean test
-----------------------------------------
+-------------
 
 maven
 
@@ -76,4 +51,16 @@ mvn package -Dmaven.test.skip=true
 ./mvnw package
 
 
-mvn buildplan:list-phase -Dphase=compile
+./mvnw buildplan:list-phase -Dphase=compile
+
+./mvnw help:describe -Dcmd=install
+
+./mvnw verify -DskipTests=true -DskipITs=false
+
+
+------------
+
+Remove buggy nul file:
+
+
+rename \\.\D:\CodingProjects\OnlineShop-claude\nul deletefile.txt 
