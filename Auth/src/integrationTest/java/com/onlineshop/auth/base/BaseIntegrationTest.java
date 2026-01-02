@@ -1,4 +1,4 @@
-package com.onlineshop.auth.integration;
+package com.onlineshop.auth.base;
 
 import com.onlineshop.auth.repository.SessionRepository;
 import com.onlineshop.auth.repository.UserRepository;

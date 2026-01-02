@@ -1,5 +1,6 @@
-package com.onlineshop.auth.integration.controller;
+package com.onlineshop.auth.base.controller;
 
+import com.onlineshop.auth.base.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onlineshop.auth.dto.LoginRequest;
 import com.onlineshop.auth.dto.LoginResponse;
@@ -8,7 +9,6 @@ import com.onlineshop.auth.dto.RegisterResponse;
 import com.onlineshop.auth.dto.ValidateResponse;
 import com.onlineshop.auth.entity.Session;
 import com.onlineshop.auth.entity.User;
-import com.onlineshop.auth.integration.BaseIntegrationTest;
 import com.onlineshop.auth.testutil.TestDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

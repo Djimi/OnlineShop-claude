@@ -177,7 +177,7 @@ api-gateway/src/test/java/com/onlineshop/gateway/
 ├── metrics/
 │   └── GatewayMetricsTest.java
 ├── integration/
-│   ├── BaseIntegrationTest.java
+│   ├── com.onlineshop.auth.repository.base.BaseIntegrationTest.java
 │   ├── AuthFlowIntegrationTest.java
 │   ├── CacheIntegrationTest.java
 │   └── RateLimitIntegrationTest.java

@@ -8,7 +8,7 @@
 | Configure JaCoCo for integration tests | DONE | Separate reports for unit/integration + merged report |
 | Create application-integration-test.yml | DONE | |
 | Create testcontainers.properties | DONE | Required for Docker Desktop on Windows |
-| Create BaseIntegrationTest | DONE | |
+| Create com.onlineshop.auth.repository.base.BaseIntegrationTest | DONE | |
 | Create TestDataFactory | DONE | |
 | Create UserRepositoryIntegrationTest | DONE | 7 tests |
 | Create SessionRepositoryIntegrationTest | DONE | 11 tests |
@@ -53,7 +53,7 @@ Implement integration tests for Auth service using Testcontainers with PostgreSQ
 | DONE | Modify | `Auth/pom.xml` - Added Testcontainers + MockMvc dependencies |
 | DONE | Create | `Auth/src/test/resources/application-integration-test.yml` |
 | DONE | Create | `Auth/src/test/resources/testcontainers.properties` |
-| DONE | Create | `Auth/src/test/java/.../integration/BaseIntegrationTest.java` |
+| DONE | Create | `Auth/src/test/java/.../integration/com.onlineshop.auth.repository.base.BaseIntegrationTest.java` |
 | DONE | Create | `Auth/src/test/java/.../integration/repository/UserRepositoryIntegrationTest.java` |
 | DONE | Create | `Auth/src/test/java/.../integration/repository/SessionRepositoryIntegrationTest.java` |
 | DONE | Create | `Auth/src/test/java/.../integration/controller/AuthControllerIntegrationTest.java` |
@@ -110,11 +110,11 @@ session:
   expiration: 3600
 ```
 
-Schema initialization uses existing file via `@Sql("file:init-db/01-schema.sql")` in BaseIntegrationTest.
+Schema initialization uses existing file via `@Sql("file:init-db/01-schema.sql")` in com.onlineshop.auth.repository.base.BaseIntegrationTest.
 
 ---
 
-## Step 3: Create BaseIntegrationTest
+## Step 3: Create com.onlineshop.auth.repository.base.BaseIntegrationTest
 
 Shared base class with:
 - `@SpringBootTest(webEnvironment = RANDOM_PORT)`
@@ -203,7 +203,7 @@ Utility class with:
 
 1. Add Testcontainers dependencies to pom.xml
 2. Create test resources (application-test.yml, init-schema.sql)
-3. Create BaseIntegrationTest
+3. Create com.onlineshop.auth.repository.base.BaseIntegrationTest
 4. Create TestDataFactory
 5. Create UserRepositoryIntegrationTest - run & verify
 6. Create SessionRepositoryIntegrationTest - run & verify

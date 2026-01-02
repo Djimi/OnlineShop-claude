@@ -1,8 +1,8 @@
-package com.onlineshop.auth.integration.repository;
+package com.onlineshop.auth.base.repository;
 
+import com.onlineshop.auth.base.BaseIntegrationTest;
 import com.onlineshop.auth.entity.Session;
 import com.onlineshop.auth.entity.User;
-import com.onlineshop.auth.integration.BaseIntegrationTest;
 import com.onlineshop.auth.testutil.TestDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,7 +15,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class SessionRepositoryIntegrationTest extends BaseIntegrationTest {
+class SessionRepositoryIT extends BaseIntegrationTest {
 
     @Test
     void findByTokenHash_whenSessionExists_returnsSession() {
