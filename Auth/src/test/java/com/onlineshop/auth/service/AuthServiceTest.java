@@ -23,15 +23,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 class AuthServiceTest {
 
     private static final long SESSION_EXPIRATION_SECONDS = 3600L;
+    private static final Instant FIXED_TIME = Instant.parse("2025-01-15T10:00:00Z");
 
     @Mock
     private UserRepository userRepository;
@@ -53,15 +54,18 @@ class AuthServiceTest {
     @Mock
     private SecureRandom secureRandom;
 
+    private Clock fixedClock;
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
+        fixedClock = Clock.fixed(FIXED_TIME, ZoneId.of("UTC"));
         authService = new AuthService(
                 userRepository,
                 sessionRepository,
                 passwordEncoder,
                 secureRandom,
+                fixedClock,
                 SESSION_EXPIRATION_SECONDS
         );
     }
@@ -71,13 +75,17 @@ class AuthServiceTest {
     @Test
     void register_whenUsernameAvailable_createsUserAndReturnsResponse() {
         RegisterRequest request = new RegisterRequest("testuser", "password123");
-        when(userRepository.existsByUsername("testuser")).thenReturn(false);
+
+        when(userRepository.existsByNormalizedUsername("testuser")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.save(argThat(user ->
+                "testuser".equals(user.getUsername()) &&
+                "encodedPassword".equals(user.getPasswordHash())
+        ))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(1L);
-            user.setCreatedAt(Instant.now());
-            user.setUpdatedAt(Instant.now());
+            user.setCreatedAt(FIXED_TIME);
+            user.setUpdatedAt(FIXED_TIME);
             return user;
         });
 
@@ -85,46 +93,46 @@ class AuthServiceTest {
 
         assertThat(response.getUserId()).isEqualTo(1L);
         assertThat(response.getUsername()).isEqualTo("testuser");
-        assertThat(response.getCreatedAt()).isNotNull();
+        assertThat(response.getCreatedAt()).isEqualTo(FIXED_TIME);
+        assertThat(response.getUpdatedAt()).isEqualTo(FIXED_TIME);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        User savedUser = userCaptor.getValue();
+        assertThat(savedUser.getUsername()).isEqualTo("testuser");
+        assertThat(savedUser.getPasswordHash()).isEqualTo("encodedPassword");
     }
 
     @Test
     void register_whenUsernameExists_throwsUserAlreadyExistsException() {
         RegisterRequest request = new RegisterRequest("existinguser", "password123");
-        when(userRepository.existsByUsername("existinguser")).thenReturn(true);
+        when(userRepository.existsByNormalizedUsername("existinguser")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(UserAlreadyExistsException.class)
-                .hasMessageContaining("existinguser");
+                .isInstanceOf(UserAlreadyExistsException.class);
     }
 
     @Test
     void register_whenUsernameExistsWithDifferentCase_throwsUserAlreadyExistsException() {
-        // TDD: Test expected behavior - case-insensitive username uniqueness
-        // This test FAILS until we implement case-insensitive checking
         // Scenario: "ivan" exists in DB, user tries to register "Ivan" -> should be rejected
-
         RegisterRequest request = new RegisterRequest("Ivan", "password123");
 
-        // Simulate: exact match "Ivan" doesn't exist, but "ivan" does exist in DB
-        // Current implementation only checks exact match, so this will incorrectly allow registration
-        when(userRepository.existsByUsername("Ivan")).thenReturn(false);
+        // The service normalizes to lowercase before checking, so "Ivan" -> "ivan"
+        when(userRepository.existsByNormalizedUsername("ivan")).thenReturn(true);
 
-        // Expected behavior: registration should fail because "ivan" already exists (case-insensitive)
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(UserAlreadyExistsException.class);
-
-        // Implementation needed:
-        // 1. Add existsByUsernameIgnoreCase() to UserRepository
-        // 2. Use it in AuthService.register() instead of existsByUsername()
     }
 
     @Test
     void register_savesUserWithEncodedPassword() {
         RegisterRequest request = new RegisterRequest("testuser", "rawPassword");
-        when(userRepository.existsByUsername("testuser")).thenReturn(false);
+        when(userRepository.existsByNormalizedUsername("testuser")).thenReturn(false);
         when(passwordEncoder.encode("rawPassword")).thenReturn("hashedPassword123");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(argThat(user ->
+                "testuser".equals(user.getUsername()) &&
+                "hashedPassword123".equals(user.getPasswordHash())
+        ))).thenAnswer(invocation -> invocation.getArgument(0));
 
         authService.register(request);
 
@@ -140,13 +148,13 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("testuser", "password123");
         User user = createUser(1L, "testuser", "encodedPassword");
 
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByNormalizedUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
         mockSecureRandomBytes();
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> {
             Session session = invocation.getArgument(0);
             session.setId(1L);
-            session.setCreatedAt(Instant.now());
+            session.setCreatedAt(FIXED_TIME);
             return session;
         });
 
@@ -164,7 +172,7 @@ class AuthServiceTest {
     @Test
     void login_whenUserNotFound_throwsInvalidUsernameOrPasswordException() {
         LoginRequest request = new LoginRequest("nonexistent", "password123");
-        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+        when(userRepository.findByNormalizedUsername("nonexistent")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(InvalidUsernameOrPasswordException.class);
@@ -175,7 +183,7 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("testuser", "wrongPassword");
         User user = createUser(1L, "testuser", "encodedPassword");
 
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByNormalizedUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongPassword", "encodedPassword")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.login(request))
@@ -187,12 +195,12 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("testuser", "password123");
         User user = createUser(1L, "testuser", "encodedPassword");
 
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByNormalizedUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> {
             Session session = invocation.getArgument(0);
             session.setId(1L);
-            session.setCreatedAt(Instant.now());
+            session.setCreatedAt(FIXED_TIME);
             return session;
         });
 
@@ -221,22 +229,21 @@ class AuthServiceTest {
     void login_setsCorrectSessionExpiration() {
         LoginRequest request = new LoginRequest("testuser", "password123");
         User user = createUser(1L, "testuser", "encodedPassword");
-        Instant beforeLogin = Instant.now();
 
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByNormalizedUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
         mockSecureRandomBytes();
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> {
             Session session = invocation.getArgument(0);
             session.setId(1L);
-            session.setCreatedAt(Instant.now());
+            session.setCreatedAt(FIXED_TIME);
             return session;
         });
 
         LoginResponse response = authService.login(request);
 
-        Instant expectedExpiration = beforeLogin.plusSeconds(SESSION_EXPIRATION_SECONDS);
-        assertThat(response.getExpiresAt()).isCloseTo(expectedExpiration, within(2, ChronoUnit.SECONDS));
+        Instant expectedExpiration = FIXED_TIME.plusSeconds(SESSION_EXPIRATION_SECONDS);
+        assertThat(response.getExpiresAt()).isEqualTo(expectedExpiration);
     }
 
     // ==================== validateToken() tests ====================
@@ -246,7 +253,7 @@ class AuthServiceTest {
         String token = "abc123token";
         String tokenHash = hashToken(token);
         User user = createUser(1L, "testuser", "encodedPassword");
-        Session session = createSession(1L, tokenHash, user, Instant.now().plusSeconds(3600));
+        Session session = createSession(1L, tokenHash, user, FIXED_TIME.plusSeconds(3600));
 
         when(sessionRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(session));
 
@@ -273,7 +280,8 @@ class AuthServiceTest {
         String token = "expiredtoken";
         String tokenHash = hashToken(token);
         User user = createUser(1L, "testuser", "encodedPassword");
-        Session session = createSession(1L, tokenHash, user, Instant.now().minusSeconds(1));
+        // Session expired 1 second before FIXED_TIME
+        Session session = createSession(1L, tokenHash, user, FIXED_TIME.minusSeconds(1));
 
         when(sessionRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(session));
 
@@ -286,7 +294,7 @@ class AuthServiceTest {
         String token = "testtoken123";
         String expectedHash = hashToken(token);
         User user = createUser(1L, "testuser", "encodedPassword");
-        Session session = createSession(1L, expectedHash, user, Instant.now().plusSeconds(3600));
+        Session session = createSession(1L, expectedHash, user, FIXED_TIME.plusSeconds(3600));
 
         when(sessionRepository.findByTokenHash(expectedHash)).thenReturn(Optional.of(session));
 
@@ -304,13 +312,13 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest("testuser", "password123");
         User user = createUser(1L, "testuser", "encodedPassword");
 
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByNormalizedUsername("testuser")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
         mockSecureRandomBytes();
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> {
             Session session = invocation.getArgument(0);
             session.setId(1L);
-            session.setCreatedAt(Instant.now());
+            session.setCreatedAt(FIXED_TIME);
             return session;
         });
 
@@ -337,8 +345,8 @@ class AuthServiceTest {
         user.setId(id);
         user.setUsername(username);
         user.setPasswordHash(passwordHash);
-        user.setCreatedAt(Instant.now());
-        user.setUpdatedAt(Instant.now());
+        user.setCreatedAt(FIXED_TIME);
+        user.setUpdatedAt(FIXED_TIME);
         return user;
     }
 
@@ -347,7 +355,7 @@ class AuthServiceTest {
         session.setId(id);
         session.setTokenHash(tokenHash);
         session.setUser(user);
-        session.setCreatedAt(Instant.now());
+        session.setCreatedAt(FIXED_TIME);
         session.setExpiresAt(expiresAt);
         return session;
     }

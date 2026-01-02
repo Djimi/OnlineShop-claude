@@ -25,6 +25,9 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    @Column(name = "normalized_username", nullable = false, unique = true, length = 50)
+    private String normalizedUsername;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -35,4 +38,17 @@ public class User {
     @Column(name = "updated_at", insertable = false, updatable = false)
     @UpdateTimestamp(source = SourceType.VM)
     private Instant updatedAt;
+
+    public User(String username, String passwordHash) {
+        this.username = username;
+        this.passwordHash = passwordHash;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void normalizeUsername() {
+        if (username != null) {
+            this.normalizedUsername = username.toLowerCase();
+        }
+    }
 }

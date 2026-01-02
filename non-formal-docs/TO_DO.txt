@@ -1,7 +1,7 @@
 NEXT:
 
-- continue the plan execution for integraiton tests
 - check all changes in polish auth service (unit tests)
+- fix the failing tests (case sentitive usernames) and think how to map user in auth service to user in auth service?
 - check how to see coverage from jacoco and how the results looks like, where they are published, etc
 - performance tests for Auth service (code is pushed in branch)
 - Read about actuator (Gemini)

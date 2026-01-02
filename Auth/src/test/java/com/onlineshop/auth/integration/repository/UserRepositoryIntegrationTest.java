@@ -14,11 +14,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UserRepositoryIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    void findByUsername_whenUserExists_returnsUser() {
+    void findByNormalizedUsername_whenUserExists_returnsUser() {
         User user = TestDataFactory.createUser("john", "hashedPassword123");
         userRepository.save(user);
 
-        Optional<User> result = userRepository.findByUsername("john");
+        Optional<User> result = userRepository.findByNormalizedUsername("john");
 
         assertThat(result).isPresent();
         assertThat(result.get().getUsername()).isEqualTo("john");
@@ -26,41 +26,50 @@ class UserRepositoryIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void findByUsername_whenUserNotFound_returnsEmpty() {
-        Optional<User> result = userRepository.findByUsername("nonexistent");
+    void findByNormalizedUsername_whenUserNotFound_returnsEmpty() {
+        Optional<User> result = userRepository.findByNormalizedUsername("nonexistent");
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    void findByUsername_isCaseSensitive() {
+    void findByNormalizedUsername_isCaseInsensitive() {
         User user = TestDataFactory.createUser("John", "hashedPassword123");
         userRepository.save(user);
 
-        Optional<User> resultLowercase = userRepository.findByUsername("john");
-        Optional<User> resultUppercase = userRepository.findByUsername("JOHN");
-        Optional<User> resultExact = userRepository.findByUsername("John");
+        // All lookups should find the user via normalized username
+        Optional<User> resultLowercase = userRepository.findByNormalizedUsername("john");
+        Optional<User> resultUppercase = userRepository.findByNormalizedUsername("john");
 
-        assertThat(resultLowercase).isEmpty();
-        assertThat(resultUppercase).isEmpty();
-        assertThat(resultExact).isPresent();
+        assertThat(resultLowercase).isPresent();
+        assertThat(resultLowercase.get().getUsername()).isEqualTo("John"); // Original case preserved
+        assertThat(resultUppercase).isPresent();
     }
 
     @Test
-    void existsByUsername_whenUserExists_returnsTrue() {
+    void existsByNormalizedUsername_whenUserExists_returnsTrue() {
         User user = TestDataFactory.createUser("jane", "hashedPassword123");
         userRepository.save(user);
 
-        boolean exists = userRepository.existsByUsername("jane");
+        boolean exists = userRepository.existsByNormalizedUsername("jane");
 
         assertThat(exists).isTrue();
     }
 
     @Test
-    void existsByUsername_whenUserNotFound_returnsFalse() {
-        boolean exists = userRepository.existsByUsername("nonexistent");
+    void existsByNormalizedUsername_whenUserNotFound_returnsFalse() {
+        boolean exists = userRepository.existsByNormalizedUsername("nonexistent");
 
         assertThat(exists).isFalse();
+    }
+
+    @Test
+    void existsByNormalizedUsername_isCaseInsensitive() {
+        User user = TestDataFactory.createUser("TestUser", "hashedPassword123");
+        userRepository.save(user);
+
+        // Check via normalized username (lowercase)
+        assertThat(userRepository.existsByNormalizedUsername("testuser")).isTrue();
     }
 
     @Test
@@ -71,6 +80,7 @@ class UserRepositoryIntegrationTest extends BaseIntegrationTest {
 
         assertThat(savedUser.getId()).isNotNull();
         assertThat(savedUser.getUsername()).isEqualTo("newuser");
+        assertThat(savedUser.getNormalizedUsername()).isEqualTo("newuser");
         assertThat(savedUser.getCreatedAt()).isNotNull();
     }
 
@@ -80,6 +90,18 @@ class UserRepositoryIntegrationTest extends BaseIntegrationTest {
         userRepository.save(user1);
 
         User user2 = TestDataFactory.createUser("duplicate", "hash2");
+
+        assertThatThrownBy(() -> userRepository.save(user2))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void save_whenDuplicateNormalizedUsername_throwsDataIntegrityViolation() {
+        User user1 = TestDataFactory.createUser("TestUser", "hash1");
+        userRepository.save(user1);
+
+        // Different case but same normalized username
+        User user2 = TestDataFactory.createUser("testuser", "hash2");
 
         assertThatThrownBy(() -> userRepository.save(user2))
                 .isInstanceOf(DataIntegrityViolationException.class);

@@ -8,7 +8,6 @@ import com.onlineshop.auth.exception.InvalidTokenException;
 import com.onlineshop.auth.exception.UserAlreadyExistsException;
 import com.onlineshop.auth.repository.SessionRepository;
 import com.onlineshop.auth.repository.UserRepository;
-import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Instant;
 
 @Service
@@ -26,42 +26,42 @@ public class AuthService {
     private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom;
+    private final Clock clock;
     private final long sessionExpirationSeconds;
 
     public AuthService(UserRepository userRepository, SessionRepository sessionRepository,
-            PasswordEncoder passwordEncoder, SecureRandom secureRandom,
+            PasswordEncoder passwordEncoder, SecureRandom secureRandom, Clock clock,
             @Value("${session.expiration:3600}") long sessionExpirationSeconds) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.secureRandom = secureRandom;
+        this.clock = clock;
         this.sessionExpirationSeconds = sessionExpirationSeconds;
     }
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
+        String normalizedUsername = request.getUsername().toLowerCase();
+        if (userRepository.existsByNormalizedUsername(normalizedUsername)) {
             throw new UserAlreadyExistsException(request.getUsername());
         }
 
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
-        userRepository.save(user);
-        // entityManager.refresh(user);
+        User user = new User(request.getUsername(), passwordEncoder.encode(request.getPassword()));
+        User savedUser = userRepository.save(user);
 
         return RegisterResponse.builder()
-                .userId(user.getId())
-                .username(user.getUsername())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
+                .userId(savedUser.getId())
+                .username(savedUser.getUsername())
+                .createdAt(savedUser.getCreatedAt())
+                .updatedAt(savedUser.getUpdatedAt())
                 .build();
     }
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+        String normalizedUsername = request.getUsername().toLowerCase();
+        User user = userRepository.findByNormalizedUsername(normalizedUsername)
                 .orElseThrow(InvalidUsernameOrPasswordException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
@@ -70,7 +70,8 @@ public class AuthService {
 
         String token = generateToken();
         String tokenHash = hashToken(token);
-        Instant expiresAt = Instant.now().plusSeconds(sessionExpirationSeconds);
+        Instant now = clock.instant();
+        Instant expiresAt = now.plusSeconds(sessionExpirationSeconds);
 
         Session session = new Session();
         session.setTokenHash(tokenHash);
@@ -96,7 +97,7 @@ public class AuthService {
         Session session = sessionRepository.findByTokenHash(tokenHash)
                 .orElseThrow(InvalidTokenException::new);
 
-        if (session.isExpired(Instant.now())) {
+        if (session.isExpired(clock.instant())) {
             throw new InvalidTokenException();
         }
 

@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
+    normalized_username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -9,6 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Create index on username for faster lookups
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+-- Create index on normalized_username for case-insensitive uniqueness checks
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_normalized_username ON users(normalized_username);
 
 -- Create sessions table
 CREATE TABLE IF NOT EXISTS sessions (

@@ -22,6 +22,9 @@ You are staff engineer with a lot of experience and always propose modern archit
 
 ---
 
+## IMPORTANT: Maven usage
+When using Maven commands you MUST use the Maven wrapper inside the project you are working on!
+
 ## Quick Reference
 
 See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) for:

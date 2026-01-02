@@ -12,7 +12,7 @@ import com.onlineshop.auth.integration.BaseIntegrationTest;
 import com.onlineshop.auth.testutil.TestDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+// import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@AutoConfigureMockMvc
+// @AutoConfigureMockMvc
 class AuthControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
@@ -74,7 +74,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        Optional<User> savedUser = userRepository.findByUsername("hashuser");
+        Optional<User> savedUser = userRepository.findByNormalizedUsername("hashuser");
         assertThat(savedUser).isPresent();
         assertThat(savedUser.get().getPasswordHash()).isNotEqualTo("plaintextpassword");
         assertThat(passwordEncoder.matches("plaintextpassword", savedUser.get().getPasswordHash())).isTrue();

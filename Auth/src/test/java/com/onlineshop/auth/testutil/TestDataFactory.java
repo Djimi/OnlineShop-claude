@@ -17,10 +17,7 @@ public final class TestDataFactory {
     }
 
     public static User createUser(String username, String passwordHash) {
-        User user = new User();
-        user.setUsername(username);
-        user.setPasswordHash(passwordHash);
-        return user;
+        return new User(username, passwordHash);
     }
 
     public static Session createSession(String tokenHash, User user, Instant expiresAt) {
