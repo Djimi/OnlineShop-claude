@@ -18,6 +18,7 @@ which are compatible with the rest of the stack
 - **Comments:** Only for tricky logic, configs, corner cases. Never obvious comments like "// get the user"
 - **Corner cases:** Always handle DB/Redis/broker down scenarios
 - **Security:** Follow OWASP guidelines, never log sensitive data
+- **Hardcoded strings** you MUST NOT hardcode strings - always make them as configurations or as variables/fields (in case of tests)
 
 ## Design Patterns
 

@@ -300,11 +300,20 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Surefire Report plugin for HTML test reports -->
+            <!-- Surefire Report plugin for HTML test reports (runs before JaCoCo check) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
                 <version>3.5.2</version>
+                <executions>
+                    <execution>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>report</goal>
+                            <goal>failsafe-report-only</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

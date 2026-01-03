@@ -1,8 +1,9 @@
 NEXT:
 
 
-- Create component integration tests
+- Add more components integration tests
 - Do not use diry contexts
+- Check hibernate requests executed
 
 - Да прегледама testcontainers.properties
 - performance tests for Auth service (code is pushed in branch)
