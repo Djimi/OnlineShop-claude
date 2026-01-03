@@ -1,4 +1,4 @@
-package com.onlineshop.auth.base;
+package com.onlineshop.auth;
 
 import com.onlineshop.auth.repository.SessionRepository;
 import com.onlineshop.auth.repository.UserRepository;

@@ -1,9 +1,9 @@
 package com.onlineshop.auth.base.controller;
 
-import com.onlineshop.auth.base.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.onlineshop.auth.BaseIntegrationTest;
 import com.onlineshop.auth.dto.LoginRequest;
 import com.onlineshop.auth.dto.LoginResponse;
 import com.onlineshop.auth.dto.RegisterRequest;
@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class AuthControllerIntegrationTest extends BaseIntegrationTest {
+class AuthControllerIT extends BaseIntegrationTest {
 
     private MockMvc mockMvc;
 
