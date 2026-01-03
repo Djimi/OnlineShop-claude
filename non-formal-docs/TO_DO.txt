@@ -1,8 +1,10 @@
 NEXT:
 
-- check all changes in polish auth service (unit tests)
-- fix the failing tests (case sentitive usernames) and think how to map user in auth service to user in auth service?
-- check how to see coverage from jacoco and how the results looks like, where they are published, etc
+
+- Create component integration tests
+- Do not use diry contexts
+
+- Да прегледама testcontainers.properties
 - performance tests for Auth service (code is pushed in branch)
 - Read about actuator (Gemini)
 
@@ -36,3 +38,13 @@ could be not the best implementation
 Migrate error responses to the new spring functionality for them
 
 -------------
+
+https://docs.spring.io/spring-framework/reference/web/webmvc-functional.html
+
+------------
+
+New features in spring boot 4 for testing: https://rieckpil.de/whats-new-for-testing-in-spring-boot-4-0-and-spring-framework-7/
+
+---------------
+
+

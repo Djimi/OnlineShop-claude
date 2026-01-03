@@ -1,4 +1,4 @@
-package com.onlineshop.auth.base.controller;
+package com.onlineshop.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
