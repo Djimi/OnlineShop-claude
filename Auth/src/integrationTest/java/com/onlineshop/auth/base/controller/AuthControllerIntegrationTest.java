@@ -2,6 +2,8 @@ package com.onlineshop.auth.base.controller;
 
 import com.onlineshop.auth.base.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.onlineshop.auth.dto.LoginRequest;
 import com.onlineshop.auth.dto.LoginResponse;
 import com.onlineshop.auth.dto.RegisterRequest;
@@ -11,12 +13,14 @@ import com.onlineshop.auth.entity.Session;
 import com.onlineshop.auth.entity.User;
 import com.onlineshop.auth.testutil.TestDataFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,17 +32,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// @AutoConfigureMockMvc
 class AuthControllerIntegrationTest extends BaseIntegrationTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private WebApplicationContext webApplicationContext;
+
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @BeforeEach
+    void setUpMockMvc() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+    }
 
     @Test
     void register_whenValidRequest_returns201WithUserDetails() throws Exception {
@@ -137,7 +148,7 @@ class AuthControllerIntegrationTest extends BaseIntegrationTest {
         String tokenHash = TestDataFactory.hashToken(response.getToken());
         Optional<Session> session = sessionRepository.findByTokenHash(tokenHash);
         assertThat(session).isPresent();
-        assertThat(session.get().getUser().getUsername()).isEqualTo("sessionuser");
+        assertThat(session.get().getUser().getId()).isEqualTo(user.getId());
     }
 
     @Test
