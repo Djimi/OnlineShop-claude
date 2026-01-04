@@ -39,6 +39,11 @@ class ComponentIT extends BaseIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(ComponentIT.class);
 
+    private static final String AUTH_BASE_PATH = "/api/v1/auth";
+    private static final String REGISTER_PATH = AUTH_BASE_PATH + "/register";
+    private static final String LOGIN_PATH = AUTH_BASE_PATH + "/login";
+    private static final String VALIDATE_PATH = AUTH_BASE_PATH + "/validate";
+
     private static final String USERNAME = "TestUser";
     private static final String USERNAME_NORMALIZED = "testuser";
     private static final String PASSWORD = "password123";
@@ -96,7 +101,7 @@ class ComponentIT extends BaseIntegrationTest {
         // Try to login with wrong password
         log.info("Attempting login with wrong password");
         ErrorResponse errorResponse = postRequestExpectingError(
-                "/api/v1/auth/login",
+                LOGIN_PATH,
                 new LoginRequest(USERNAME, "wrongPassword"),
                 HttpStatus.UNAUTHORIZED
         );
@@ -106,15 +111,16 @@ class ComponentIT extends BaseIntegrationTest {
                 HttpStatus.UNAUTHORIZED,
                 "https://api.onlineshop.com/errors/invalid-username-or-password",
                 "Unauthorized",
-                "/api/v1/auth/login"
+                LOGIN_PATH
         );
     }
 
     @Test
     void request_toNonExistentEndpoint_returnsNotFound() throws Exception {
+        String nonExistentPath = AUTH_BASE_PATH + "/nonexistent";
         log.info("Requesting non-existent endpoint");
         var result = restTestClient.get()
-                .uri("/api/v1/auth/nonexistent")
+                .uri(nonExistentPath)
                 .exchange()
                 .expectStatus().isNotFound()
                 .returnResult(String.class);
@@ -126,7 +132,7 @@ class ComponentIT extends BaseIntegrationTest {
                 HttpStatus.NOT_FOUND,
                 "https://api.onlineshop.com/errors/not-found",
                 "Not Found",
-                "/api/v1/auth/nonexistent"
+                nonExistentPath
         );
     }
 
@@ -154,24 +160,58 @@ class ComponentIT extends BaseIntegrationTest {
 
     private static Stream<Arguments> unsupportedMethodsProvider() {
         return Stream.of(
-                // /api/v1/auth/register - only POST is allowed
-                Arguments.of(HttpMethod.GET, "/api/v1/auth/register"),
-                Arguments.of(HttpMethod.PUT, "/api/v1/auth/register"),
-                Arguments.of(HttpMethod.DELETE, "/api/v1/auth/register"),
-                Arguments.of(HttpMethod.PATCH, "/api/v1/auth/register"),
+                // REGISTER_PATH - only POST is allowed
+                Arguments.of(HttpMethod.GET, REGISTER_PATH),
+                Arguments.of(HttpMethod.PUT, REGISTER_PATH),
+                Arguments.of(HttpMethod.DELETE, REGISTER_PATH),
+                Arguments.of(HttpMethod.PATCH, REGISTER_PATH),
 
-                // /api/v1/auth/login - only POST is allowed
-                Arguments.of(HttpMethod.GET, "/api/v1/auth/login"),
-                Arguments.of(HttpMethod.PUT, "/api/v1/auth/login"),
-                Arguments.of(HttpMethod.DELETE, "/api/v1/auth/login"),
-                Arguments.of(HttpMethod.PATCH, "/api/v1/auth/login"),
+                // LOGIN_PATH - only POST is allowed
+                Arguments.of(HttpMethod.GET, LOGIN_PATH),
+                Arguments.of(HttpMethod.PUT, LOGIN_PATH),
+                Arguments.of(HttpMethod.DELETE, LOGIN_PATH),
+                Arguments.of(HttpMethod.PATCH, LOGIN_PATH),
 
-                // /api/v1/auth/validate - only GET is allowed
-                Arguments.of(HttpMethod.POST, "/api/v1/auth/validate"),
-                Arguments.of(HttpMethod.PUT, "/api/v1/auth/validate"),
-                Arguments.of(HttpMethod.DELETE, "/api/v1/auth/validate"),
-                Arguments.of(HttpMethod.PATCH, "/api/v1/auth/validate")
+                // VALIDATE_PATH - only GET is allowed
+                Arguments.of(HttpMethod.POST, VALIDATE_PATH),
+                Arguments.of(HttpMethod.PUT, VALIDATE_PATH),
+                Arguments.of(HttpMethod.DELETE, VALIDATE_PATH),
+                Arguments.of(HttpMethod.PATCH, VALIDATE_PATH)
         );
+    }
+
+    // ==================== Username Uniqueness Tests ====================
+
+    /**
+     * Verifies that username uniqueness is case-insensitive.
+     * When a user registers with "TestUser", another registration with "TESTUSER" should fail.
+     */
+    @Test
+    void register_withSameUsernameDifferentCasing_returnsConflict() throws Exception {
+        // First registration succeeds
+        String testUser = "TestUser";
+        registerUser(testUser, PASSWORD);
+
+        // Second registration with different casing should fail
+        ErrorResponse errorResponse = postRequestExpectingError(
+                REGISTER_PATH,
+                new RegisterRequest("TESTUSER", PASSWORD),
+                HttpStatus.CONFLICT
+        );
+
+        assertErrorResponse(
+                errorResponse,
+                HttpStatus.CONFLICT,
+                "https://api.onlineshop.com/errors/user-already-exists",
+                "Conflict",
+                REGISTER_PATH
+        );
+
+        // Verify only one user exists in database
+        List<Map<String, Object>> users = jdbcTemplate.queryForList("SELECT * FROM users");
+        assertThat(users).as("Only one user should exist in database").hasSize(1);
+        assertThat(users.get(0).get("normalized_username")).isEqualTo("testuser");
+        assertThat(users.get(0).get("username")).isEqualTo(testUser);
     }
 
     // ==================== HTTP Request Helpers ====================
@@ -179,7 +219,7 @@ class ComponentIT extends BaseIntegrationTest {
     private RegisterResponse registerUser(String username, String password) throws Exception {
         log.info("Registering user: {}", username);
         return postRequest(
-                "/api/v1/auth/register",
+                REGISTER_PATH,
                 new RegisterRequest(username, password),
                 RegisterResponse.class,
                 HttpStatus.CREATED
@@ -189,7 +229,7 @@ class ComponentIT extends BaseIntegrationTest {
     private LoginResponse login(String username, String password) throws Exception {
         log.info("Logging in user: {}", username);
         return postRequest(
-                "/api/v1/auth/login",
+                LOGIN_PATH,
                 new LoginRequest(username, password),
                 LoginResponse.class,
                 HttpStatus.OK
@@ -199,7 +239,7 @@ class ComponentIT extends BaseIntegrationTest {
     private ValidateResponse validateToken(String token) throws Exception {
         log.info("Validating token");
         var result = restTestClient.get()
-                .uri("/api/v1/auth/validate")
+                .uri(VALIDATE_PATH)
                 .header("Authorization", "Bearer: " + token)
                 .exchange()
                 .expectStatus().isOk()

@@ -3,6 +3,7 @@ package com.onlineshop.auth.exception;
 import com.onlineshop.auth.dto.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,48 @@ public class GlobalExceptionHandler {
                 .title("Conflict")
                 .status(HttpStatus.CONFLICT.value())
                 .detail(ex.getMessage())
+                .instance(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    /**
+     * Handles database constraint violations, particularly for duplicate username scenarios
+     * that occur during race conditions when two concurrent requests pass the existence check
+     * but one fails on insert due to the unique constraint.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException ex,
+            WebRequest request) {
+        String message = ex.getMostSpecificCause().getMessage();
+
+        // Check if this is a username uniqueness constraint violation
+        if (message != null && (message.contains("users_username_key") ||
+                message.contains("users_normalized_username_key") ||
+                message.contains("normalized_username"))) {
+            logger.warn("Duplicate username constraint violation on {}", request.getDescription(false));
+
+            ErrorResponse errorResponse = ErrorResponse.builder()
+                    .type("https://api.onlineshop.com/errors/user-already-exists")
+                    .title("Conflict")
+                    .status(HttpStatus.CONFLICT.value())
+                    .detail("A user with this username already exists.")
+                    .instance(request.getDescription(false).replace("uri=", ""))
+                    .build();
+
+            return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+        }
+
+        // For other data integrity violations, return a generic conflict response
+        logger.warn("Data integrity violation on {}: {}", request.getDescription(false), message);
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("https://api.onlineshop.com/errors/conflict")
+                .title("Conflict")
+                .status(HttpStatus.CONFLICT.value())
+                .detail("The request could not be completed due to a conflict with the current state.")
                 .instance(request.getDescription(false).replace("uri=", ""))
                 .build();
 
