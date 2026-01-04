@@ -76,6 +76,26 @@ services:
           cpus: '1'
           memory: 512M
 
+  # ==================== K6 LOAD TESTING ====================
+  k6:
+    image: grafana/k6:latest
+    container_name: perf-k6
+    networks:
+      - perf-network
+    volumes:
+      - ./:/tests
+      - ./reports:/tests/reports
+      - ./baselines:/tests/baselines
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    environment:
+      - K6_OUT=json=/tests/reports/results.json
+    # Don't start automatically - run tests manually
+    profiles:
+      - tools
+    working_dir: /tests
+
 networks:
   perf-network:
     driver: bridge
