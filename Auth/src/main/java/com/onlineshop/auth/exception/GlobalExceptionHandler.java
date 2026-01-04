@@ -45,8 +45,7 @@ public class GlobalExceptionHandler {
 
         // Check if this is a username uniqueness constraint violation
         if (message != null && (message.contains("users_username_key") ||
-                message.contains("users_normalized_username_key") ||
-                message.contains("normalized_username"))) {
+                message.contains("users_normalized_username_key"))) {
             logger.warn("Duplicate username constraint violation on {}", request.getDescription(false));
 
             ErrorResponse errorResponse = ErrorResponse.builder()
