@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -53,127 +54,145 @@ class ComponentIT extends BaseIntegrationTest {
 
     @Test
     void fullAuthenticationFlow_registerLoginValidateMultipleSessions_succeeds() throws Exception {
-        // Step 1: Register
-        log.info("Registering user: {}", USERNAME);
-        RegisterRequest registerRequest = new RegisterRequest(USERNAME, PASSWORD);
+        // Register user
+        RegisterResponse registerResponse = registerUser(USERNAME, PASSWORD);
+        assertRegisterResponse(registerResponse, EXPECTED_USER_ID, USERNAME);
 
-        var registerResult = restTestClient.post()
-                .uri("/api/v1/auth/register")
-                .body(registerRequest)
-                .exchange()
-                .expectStatus().isCreated()
-                .returnResult(String.class);
+        // First login
+        LoginResponse firstLogin = login(USERNAME, PASSWORD);
+        assertLoginResponse(firstLogin, EXPECTED_USER_ID, USERNAME);
 
-        String registerBody = registerResult.getResponseBody();
-        RegisterResponse registerResponse = objectMapper.readValue(registerBody, RegisterResponse.class);
+        // Validate first token
+        ValidateResponse firstValidation = validateToken(firstLogin.getToken());
+        assertValidateResponse(firstValidation, EXPECTED_USER_ID, USERNAME, firstLogin);
 
-        Instant now = Instant.now();
-        assertThat(registerResponse.getUserId()).isEqualTo(EXPECTED_USER_ID);
-        assertThat(registerResponse.getUsername()).isEqualTo(USERNAME);
-        assertTimestampsAreClose(registerResponse.getCreatedAt(), now);
-        assertTimestampsAreClose(registerResponse.getUpdatedAt(), now);
+        // Second login (creating another session)
+        LoginResponse secondLogin = login(USERNAME, PASSWORD);
+        assertLoginResponse(secondLogin, EXPECTED_USER_ID, USERNAME);
+        assertThat(secondLogin.getToken()).isNotEqualTo(firstLogin.getToken());
 
-        // Step 2: First Login
-        log.info("First login for user: {}", USERNAME);
-        LoginRequest loginRequest = new LoginRequest(USERNAME, PASSWORD);
+        // Both tokens should still be valid (multiple sessions supported)
+        assertTokenIsValid(firstLogin.getToken());
+        assertTokenIsValid(secondLogin.getToken());
 
-        var loginResult1 = restTestClient.post()
-                .uri("/api/v1/auth/login")
-                .body(loginRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(String.class);
-
-        String loginBody1 = loginResult1.getResponseBody();
-        LoginResponse loginResponse1 = objectMapper.readValue(loginBody1, LoginResponse.class);
-
-        now = Instant.now();
-        String token1 = loginResponse1.getToken();
-        assertThat(token1).isNotBlank();
-        assertThat(loginResponse1.getUserId()).isEqualTo(EXPECTED_USER_ID);
-        assertThat(loginResponse1.getUsername()).isEqualTo(USERNAME);
-        assertThat(loginResponse1.getTokenType()).isEqualTo("Bearer");
-        assertThat(loginResponse1.getExpiresIn()).isEqualTo(SESSION_EXPIRATION_SECONDS);
-        assertTimestampsAreClose(loginResponse1.getCreatedAt(), now);
-        assertTimestampsAreClose(loginResponse1.getExpiresAt(), now.plusSeconds(SESSION_EXPIRATION_SECONDS));
-
-        // Step 3: Validate first token
-        log.info("Validating first token");
-        var validateResult1 = restTestClient.get()
-                .uri("/api/v1/auth/validate")
-                .header("Authorization", "Bearer: " + token1)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(String.class);
-
-        String validateBody1 = validateResult1.getResponseBody();
-        ValidateResponse validateResponse1 = objectMapper.readValue(validateBody1, ValidateResponse.class);
-
-        assertThat(validateResponse1.isValid()).isTrue();
-        assertThat(validateResponse1.getUserId()).isEqualTo(EXPECTED_USER_ID);
-        assertThat(validateResponse1.getUsername()).isEqualTo(USERNAME);
-        assertThat(validateResponse1.getCreatedAt()).isEqualTo(loginResponse1.getCreatedAt());
-        assertThat(validateResponse1.getExpiresAt()).isEqualTo(loginResponse1.getExpiresAt());
-
-        // Step 4: Second Login (creating another session)
-        log.info("Second login for user: {}", USERNAME);
-        var loginResult2 = restTestClient.post()
-                .uri("/api/v1/auth/login")
-                .body(loginRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(String.class);
-
-        String loginBody2 = loginResult2.getResponseBody();
-        LoginResponse loginResponse2 = objectMapper.readValue(loginBody2, LoginResponse.class);
-
-        now = Instant.now();
-        String token2 = loginResponse2.getToken();
-        assertThat(token2).isNotBlank();
-        assertThat(token2).isNotEqualTo(token1);
-        assertThat(loginResponse2.getUserId()).isEqualTo(EXPECTED_USER_ID);
-        assertThat(loginResponse2.getUsername()).isEqualTo(USERNAME);
-        assertTimestampsAreClose(loginResponse2.getCreatedAt(), now);
-        assertTimestampsAreClose(loginResponse2.getExpiresAt(), now.plusSeconds(SESSION_EXPIRATION_SECONDS));
-
-        // Step 5: Validate BOTH tokens are still valid (multiple sessions supported)
-        log.info("Validating both tokens are still valid");
-        var validateResultToken1Again = restTestClient.get()
-                .uri("/api/v1/auth/validate")
-                .header("Authorization", "Bearer: " + token1)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(String.class);
-
-        ValidateResponse validateToken1Again = objectMapper.readValue(
-                validateResultToken1Again.getResponseBody(), ValidateResponse.class);
-        assertThat(validateToken1Again.isValid()).isTrue();
-
-        var validateResultToken2 = restTestClient.get()
-                .uri("/api/v1/auth/validate")
-                .header("Authorization", "Bearer: " + token2)
-                .exchange()
-                .expectStatus().isOk()
-                .returnResult(String.class);
-
-        ValidateResponse validateToken2 = objectMapper.readValue(
-                validateResultToken2.getResponseBody(), ValidateResponse.class);
-        assertThat(validateToken2.isValid()).isTrue();
-
-        // Step 6: Verify database state using JDBC
-        log.info("Verifying database state");
-        verifyDatabaseState(token1, token2);
+        // Verify database state
+        verifyUserInDatabase(EXPECTED_USER_ID, USERNAME, USERNAME_NORMALIZED, PASSWORD);
+        verifySessionsInDatabase(firstLogin.getToken(), secondLogin.getToken());
 
         log.info("Full authentication flow completed successfully");
     }
 
-    private void verifyDatabaseState(String token1, String token2) {
-        // Verify users table
+    // ==================== HTTP Request Helpers ====================
+
+    private RegisterResponse registerUser(String username, String password) throws Exception {
+        log.info("Registering user: {}", username);
+        return postRequest(
+                "/api/v1/auth/register",
+                new RegisterRequest(username, password),
+                RegisterResponse.class,
+                HttpStatus.CREATED
+        );
+    }
+
+    private LoginResponse login(String username, String password) throws Exception {
+        log.info("Logging in user: {}", username);
+        return postRequest(
+                "/api/v1/auth/login",
+                new LoginRequest(username, password),
+                LoginResponse.class,
+                HttpStatus.OK
+        );
+    }
+
+    private ValidateResponse validateToken(String token) throws Exception {
+        log.info("Validating token");
+        var result = restTestClient.get()
+                .uri("/api/v1/auth/validate")
+                .header("Authorization", "Bearer: " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult(String.class);
+
+        return objectMapper.readValue(result.getResponseBody(), ValidateResponse.class);
+    }
+
+    private <T> T postRequest(String uri, Object body, Class<T> responseType, HttpStatus expectedStatus) throws Exception {
+        var result = restTestClient.post()
+                .uri(uri)
+                .body(body)
+                .exchange()
+                .expectStatus().isEqualTo(expectedStatus)
+                .returnResult(String.class);
+
+        return objectMapper.readValue(result.getResponseBody(), responseType);
+    }
+
+    // ==================== Assertion Helpers ====================
+
+    private void assertRegisterResponse(RegisterResponse response, Long expectedUserId, String expectedUsername) {
+        Instant now = Instant.now();
+        assertThat(response.getUserId()).isEqualTo(expectedUserId);
+        assertThat(response.getUsername()).isEqualTo(expectedUsername);
+        assertTimestampIsRecent(response.getCreatedAt(), now);
+        assertTimestampIsRecent(response.getUpdatedAt(), now);
+    }
+
+    private void assertLoginResponse(LoginResponse response, Long expectedUserId, String expectedUsername) {
+        Instant now = Instant.now();
+        assertThat(response.getToken()).isNotBlank();
+        assertThat(response.getUserId()).isEqualTo(expectedUserId);
+        assertThat(response.getUsername()).isEqualTo(expectedUsername);
+        assertThat(response.getTokenType()).isEqualTo("Bearer");
+        assertThat(response.getExpiresIn()).isEqualTo(SESSION_EXPIRATION_SECONDS);
+        assertTimestampIsRecent(response.getCreatedAt(), now);
+        assertTimestampIsRecent(response.getExpiresAt(), now.plusSeconds(SESSION_EXPIRATION_SECONDS));
+    }
+
+    private void assertValidateResponse(ValidateResponse response, Long expectedUserId, String expectedUsername,
+                                        LoginResponse loginResponse) {
+        assertThat(response.isValid()).isTrue();
+        assertThat(response.getUserId()).isEqualTo(expectedUserId);
+        assertThat(response.getUsername()).isEqualTo(expectedUsername);
+        assertThat(response.getCreatedAt()).isEqualTo(loginResponse.getCreatedAt());
+        assertThat(response.getExpiresAt()).isEqualTo(loginResponse.getExpiresAt());
+    }
+
+    private void assertTokenIsValid(String token) throws Exception {
+        ValidateResponse response = validateToken(token);
+        assertThat(response.isValid()).isTrue();
+    }
+
+    private void assertTimestampIsRecent(Instant actual, Instant expected) {
+        assertThat(actual).isNotNull();
+        long diffSeconds = Math.abs(Duration.between(actual, expected).toSeconds());
+        assertThat(diffSeconds)
+                .as("Timestamp %s should be within 1 second of %s", actual, expected)
+                .isLessThanOrEqualTo(1);
+    }
+
+    // ==================== Database Verification Helpers ====================
+
+    private void verifyUserInDatabase(Long expectedId, String expectedUsername,
+                                      String expectedNormalizedUsername, String password) {
         log.info("Verifying users table");
         List<Map<String, Object>> users = jdbcTemplate.queryForList("SELECT * FROM users");
         assertThat(users).hasSize(1);
 
         Map<String, Object> user = users.getFirst();
+        assertUserColumns(user);
+        assertThat(user.get("id")).isEqualTo(expectedId);
+        assertThat(user.get("username")).isEqualTo(expectedUsername);
+        assertThat(user.get("normalized_username")).isEqualTo(expectedNormalizedUsername);
+
+        String storedPasswordHash = (String) user.get("password_hash");
+        assertThat(storedPasswordHash).isNotBlank();
+        assertThat(passwordEncoder.matches(password, storedPasswordHash)).isTrue();
+
+        assertThat((Timestamp) user.get("created_at")).isNotNull();
+        assertThat((Timestamp) user.get("updated_at")).isNotNull();
+    }
+
+    private void assertUserColumns(Map<String, Object> user) {
         assertThat(user).containsKey("id");
         assertThat(user).containsKey("username");
         assertThat(user).containsKey("normalized_username");
@@ -181,72 +200,46 @@ class ComponentIT extends BaseIntegrationTest {
         assertThat(user).containsKey("created_at");
         assertThat(user).containsKey("updated_at");
         assertThat(user).hasSize(6);
+    }
 
-        assertThat(user.get("id")).isEqualTo(EXPECTED_USER_ID);
-        assertThat(user.get("username")).isEqualTo(USERNAME);
-        assertThat(user.get("normalized_username")).isEqualTo(USERNAME_NORMALIZED);
-
-        // Verify password hash matches the original password
-        String storedPasswordHash = (String) user.get("password_hash");
-        assertThat(storedPasswordHash).isNotBlank();
-        assertThat(passwordEncoder.matches(PASSWORD, storedPasswordHash)).isTrue();
-
-        Timestamp userCreatedAt = (Timestamp) user.get("created_at");
-        Timestamp userUpdatedAt = (Timestamp) user.get("updated_at");
-        assertThat(userCreatedAt).isNotNull();
-        assertThat(userUpdatedAt).isNotNull();
-
-        // Verify sessions table
+    private void verifySessionsInDatabase(String token1, String token2) {
         log.info("Verifying sessions table");
         List<Map<String, Object>> sessions = jdbcTemplate.queryForList("SELECT * FROM sessions ORDER BY id");
         assertThat(sessions).hasSize(2);
 
-        Map<String, Object> session1 = sessions.get(0);
-        assertThat(session1).containsKey("id");
-        assertThat(session1).containsKey("token_hash");
-        assertThat(session1).containsKey("user_id");
-        assertThat(session1).containsKey("created_at");
-        assertThat(session1).containsKey("expires_at");
-        assertThat(session1).hasSize(5);
+        verifySession(sessions.get(0), token1);
+        verifySession(sessions.get(1), token2);
 
-        // Verify first session token hash exactly
-        String expectedToken1Hash = TestDataFactory.hashToken(token1);
-        assertThat(session1.get("token_hash")).isEqualTo(expectedToken1Hash);
-        assertThat(session1.get("user_id")).isEqualTo(EXPECTED_USER_ID);
-
-        Timestamp session1CreatedAt = (Timestamp) session1.get("created_at");
-        Timestamp session1ExpiresAt = (Timestamp) session1.get("expires_at");
-        assertThat(session1CreatedAt).isNotNull();
-        assertThat(session1ExpiresAt).isNotNull();
-        long session1DurationSeconds = (session1ExpiresAt.getTime() - session1CreatedAt.getTime()) / 1000;
-        assertThat(session1DurationSeconds).isBetween(
-                (long) SESSION_EXPIRATION_SECONDS - 1, (long) SESSION_EXPIRATION_SECONDS + 1);
-
-        // Verify second session token hash exactly
-        Map<String, Object> session2 = sessions.get(1);
-        String expectedToken2Hash = TestDataFactory.hashToken(token2);
-        assertThat(session2.get("token_hash")).isEqualTo(expectedToken2Hash);
-        assertThat(session2.get("user_id")).isEqualTo(EXPECTED_USER_ID);
-
-        Timestamp session2CreatedAt = (Timestamp) session2.get("created_at");
-        Timestamp session2ExpiresAt = (Timestamp) session2.get("expires_at");
-        assertThat(session2CreatedAt).isNotNull();
-        assertThat(session2ExpiresAt).isNotNull();
-        long session2DurationSeconds = (session2ExpiresAt.getTime() - session2CreatedAt.getTime()) / 1000;
-        assertThat(session2DurationSeconds).isBetween(
-                (long) SESSION_EXPIRATION_SECONDS - 1, (long) SESSION_EXPIRATION_SECONDS + 1);
-
-        // Verify sessions have different token hashes
-        assertThat(session1.get("token_hash")).isNotEqualTo(session2.get("token_hash"));
+        assertThat(sessions.get(0).get("token_hash"))
+                .isNotEqualTo(sessions.get(1).get("token_hash"));
 
         log.info("Database verification completed: 1 user, 2 sessions");
     }
 
-    private void assertTimestampsAreClose(Instant actual, Instant expected) {
-        assertThat(actual).isNotNull();
-        long diffSeconds = Math.abs(Duration.between(actual, expected).toSeconds());
-        assertThat(diffSeconds)
-                .as("Timestamp %s should be within 1 second of %s", actual, expected)
-                .isLessThanOrEqualTo(1);
+    private void verifySession(Map<String, Object> session, String token) {
+        assertSessionColumns(session);
+
+        String expectedTokenHash = TestDataFactory.hashToken(token);
+        assertThat(session.get("token_hash")).isEqualTo(expectedTokenHash);
+        assertThat(session.get("user_id")).isEqualTo(EXPECTED_USER_ID);
+
+        Timestamp createdAt = (Timestamp) session.get("created_at");
+        Timestamp expiresAt = (Timestamp) session.get("expires_at");
+        assertThat(createdAt).isNotNull();
+        assertThat(expiresAt).isNotNull();
+
+        long durationSeconds = (expiresAt.getTime() - createdAt.getTime()) / 1000;
+        assertThat(durationSeconds).isBetween(
+                (long) SESSION_EXPIRATION_SECONDS - 1,
+                (long) SESSION_EXPIRATION_SECONDS + 1);
+    }
+
+    private void assertSessionColumns(Map<String, Object> session) {
+        assertThat(session).containsKey("id");
+        assertThat(session).containsKey("token_hash");
+        assertThat(session).containsKey("user_id");
+        assertThat(session).containsKey("created_at");
+        assertThat(session).containsKey("expires_at");
+        assertThat(session).hasSize(5);
     }
 }

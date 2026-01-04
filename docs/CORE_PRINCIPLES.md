@@ -8,7 +8,7 @@ See [PROJECTS_OVERVIEW.md](./CONCEPTS_TO_TRY.md) for examples (but don't limit t
 1. **Test-Driven Development (TDD)** - Write tests first, then implementation
 <!-- 2. **Domain-Driven Design (DDD)** - Model domain explicitly, use ubiquitous language -->
 3. **High Abstraction** - Program to interfaces, use design patterns, leverage generics
-4. **Latest Technologies** - When adding new technology you MUST search for and use the newest stable versions (Java 25, Spring Boot 4, React 19, etc)
+4. **Latest Technologies** - When adding new technology you MUST search for and use the newest stable versions as of today (Java 25, Spring Boot 4, React 19, etc)
 which are compatible with the rest of the stack
 5. **Modern Java Features** - Virtual threads, enhanced switch, var, records, sealed classes
 
