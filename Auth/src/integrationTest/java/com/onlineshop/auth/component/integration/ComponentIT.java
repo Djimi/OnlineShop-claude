@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.onlineshop.auth.BaseIntegrationTest;
+import com.onlineshop.auth.dto.ErrorResponse;
 import com.onlineshop.auth.dto.LoginRequest;
 import com.onlineshop.auth.dto.LoginResponse;
 import com.onlineshop.auth.dto.RegisterRequest;
@@ -11,10 +12,14 @@ import com.onlineshop.auth.dto.RegisterResponse;
 import com.onlineshop.auth.dto.ValidateResponse;
 import com.onlineshop.auth.testutil.TestDataFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +42,6 @@ class ComponentIT extends BaseIntegrationTest {
     private static final String USERNAME = "TestUser";
     private static final String USERNAME_NORMALIZED = "testuser";
     private static final String PASSWORD = "password123";
-    private static final Long EXPECTED_USER_ID = 1L;
     private static final int SESSION_EXPIRATION_SECONDS = 3600;
 
     @Autowired
@@ -56,19 +61,20 @@ class ComponentIT extends BaseIntegrationTest {
     void fullAuthenticationFlow_registerLoginValidateMultipleSessions_succeeds() throws Exception {
         // Register user
         RegisterResponse registerResponse = registerUser(USERNAME, PASSWORD);
-        assertRegisterResponse(registerResponse, EXPECTED_USER_ID, USERNAME);
+        Long userId = registerResponse.getUserId();
+        assertRegisterResponse(registerResponse, userId, USERNAME);
 
         // First login
         LoginResponse firstLogin = login(USERNAME, PASSWORD);
-        assertLoginResponse(firstLogin, EXPECTED_USER_ID, USERNAME);
+        assertLoginResponse(firstLogin, userId, USERNAME);
 
         // Validate first token
         ValidateResponse firstValidation = validateToken(firstLogin.getToken());
-        assertValidateResponse(firstValidation, EXPECTED_USER_ID, USERNAME, firstLogin);
+        assertValidateResponse(firstValidation, userId, USERNAME, firstLogin);
 
         // Second login (creating another session)
         LoginResponse secondLogin = login(USERNAME, PASSWORD);
-        assertLoginResponse(secondLogin, EXPECTED_USER_ID, USERNAME);
+        assertLoginResponse(secondLogin, userId, USERNAME);
         assertThat(secondLogin.getToken()).isNotEqualTo(firstLogin.getToken());
 
         // Both tokens should still be valid (multiple sessions supported)
@@ -76,10 +82,96 @@ class ComponentIT extends BaseIntegrationTest {
         assertTokenIsValid(secondLogin.getToken());
 
         // Verify database state
-        verifyUserInDatabase(EXPECTED_USER_ID, USERNAME, USERNAME_NORMALIZED, PASSWORD);
-        verifySessionsInDatabase(firstLogin.getToken(), secondLogin.getToken());
+        verifyUserInDatabase(userId, USERNAME, USERNAME_NORMALIZED, PASSWORD);
+        verifySessionsInDatabase(userId, firstLogin.getToken(), secondLogin.getToken());
 
         log.info("Full authentication flow completed successfully");
+    }
+
+    @Test
+    void login_withWrongPassword_returnsUnauthorized() throws Exception {
+        // First register a user
+        registerUser(USERNAME, PASSWORD);
+
+        // Try to login with wrong password
+        log.info("Attempting login with wrong password");
+        ErrorResponse errorResponse = postRequestExpectingError(
+                "/api/v1/auth/login",
+                new LoginRequest(USERNAME, "wrongPassword"),
+                HttpStatus.UNAUTHORIZED
+        );
+
+        assertErrorResponse(
+                errorResponse,
+                HttpStatus.UNAUTHORIZED,
+                "https://api.onlineshop.com/errors/invalid-username-or-password",
+                "Unauthorized",
+                "/api/v1/auth/login"
+        );
+    }
+
+    @Test
+    void request_toNonExistentEndpoint_returnsNotFound() throws Exception {
+        log.info("Requesting non-existent endpoint");
+        var result = restTestClient.get()
+                .uri("/api/v1/auth/nonexistent")
+                .exchange()
+                .expectStatus().isNotFound()
+                .returnResult(String.class);
+
+        ErrorResponse errorResponse = objectMapper.readValue(result.getResponseBody(), ErrorResponse.class);
+
+        assertErrorResponse(
+                errorResponse,
+                HttpStatus.NOT_FOUND,
+                "https://api.onlineshop.com/errors/not-found",
+                "Not Found",
+                "/api/v1/auth/nonexistent"
+        );
+    }
+
+    @ParameterizedTest(name = "{0} {1} should return 405 Method Not Allowed")
+    @MethodSource("unsupportedMethodsProvider")
+    void request_withUnsupportedMethod_returnsMethodNotAllowed(HttpMethod method, String endpoint) throws Exception {
+        log.info("Testing unsupported method {} on endpoint {}", method, endpoint);
+
+        var result = restTestClient.method(method)
+                .uri(endpoint)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.METHOD_NOT_ALLOWED)
+                .returnResult(String.class);
+
+        ErrorResponse errorResponse = objectMapper.readValue(result.getResponseBody(), ErrorResponse.class);
+
+        assertErrorResponse(
+                errorResponse,
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "https://api.onlineshop.com/errors/method-not-allowed",
+                "Method Not Allowed",
+                endpoint
+        );
+    }
+
+    private static Stream<Arguments> unsupportedMethodsProvider() {
+        return Stream.of(
+                // /api/v1/auth/register - only POST is allowed
+                Arguments.of(HttpMethod.GET, "/api/v1/auth/register"),
+                Arguments.of(HttpMethod.PUT, "/api/v1/auth/register"),
+                Arguments.of(HttpMethod.DELETE, "/api/v1/auth/register"),
+                Arguments.of(HttpMethod.PATCH, "/api/v1/auth/register"),
+
+                // /api/v1/auth/login - only POST is allowed
+                Arguments.of(HttpMethod.GET, "/api/v1/auth/login"),
+                Arguments.of(HttpMethod.PUT, "/api/v1/auth/login"),
+                Arguments.of(HttpMethod.DELETE, "/api/v1/auth/login"),
+                Arguments.of(HttpMethod.PATCH, "/api/v1/auth/login"),
+
+                // /api/v1/auth/validate - only GET is allowed
+                Arguments.of(HttpMethod.POST, "/api/v1/auth/validate"),
+                Arguments.of(HttpMethod.PUT, "/api/v1/auth/validate"),
+                Arguments.of(HttpMethod.DELETE, "/api/v1/auth/validate"),
+                Arguments.of(HttpMethod.PATCH, "/api/v1/auth/validate")
+        );
     }
 
     // ==================== HTTP Request Helpers ====================
@@ -127,6 +219,17 @@ class ComponentIT extends BaseIntegrationTest {
         return objectMapper.readValue(result.getResponseBody(), responseType);
     }
 
+    private ErrorResponse postRequestExpectingError(String uri, Object body, HttpStatus expectedStatus) throws Exception {
+        var result = restTestClient.post()
+                .uri(uri)
+                .body(body)
+                .exchange()
+                .expectStatus().isEqualTo(expectedStatus)
+                .returnResult(String.class);
+
+        return objectMapper.readValue(result.getResponseBody(), ErrorResponse.class);
+    }
+
     // ==================== Assertion Helpers ====================
 
     private void assertRegisterResponse(RegisterResponse response, Long expectedUserId, String expectedUsername) {
@@ -170,6 +273,15 @@ class ComponentIT extends BaseIntegrationTest {
                 .isLessThanOrEqualTo(1);
     }
 
+    private void assertErrorResponse(ErrorResponse response, HttpStatus expectedStatus,
+                                      String expectedType, String expectedTitle, String expectedInstance) {
+        assertThat(response.getStatus()).isEqualTo(expectedStatus.value());
+        assertThat(response.getType()).isEqualTo(expectedType);
+        assertThat(response.getTitle()).isEqualTo(expectedTitle);
+        assertThat(response.getInstance()).isEqualTo(expectedInstance);
+        assertThat(response.getDetail()).isNotBlank();
+    }
+
     // ==================== Database Verification Helpers ====================
 
     private void verifyUserInDatabase(Long expectedId, String expectedUsername,
@@ -202,13 +314,13 @@ class ComponentIT extends BaseIntegrationTest {
         assertThat(user).hasSize(6);
     }
 
-    private void verifySessionsInDatabase(String token1, String token2) {
+    private void verifySessionsInDatabase(Long expectedUserId, String token1, String token2) {
         log.info("Verifying sessions table");
         List<Map<String, Object>> sessions = jdbcTemplate.queryForList("SELECT * FROM sessions ORDER BY id");
         assertThat(sessions).hasSize(2);
 
-        verifySession(sessions.get(0), token1);
-        verifySession(sessions.get(1), token2);
+        verifySession(sessions.get(0), expectedUserId, token1);
+        verifySession(sessions.get(1), expectedUserId, token2);
 
         assertThat(sessions.get(0).get("token_hash"))
                 .isNotEqualTo(sessions.get(1).get("token_hash"));
@@ -216,12 +328,12 @@ class ComponentIT extends BaseIntegrationTest {
         log.info("Database verification completed: 1 user, 2 sessions");
     }
 
-    private void verifySession(Map<String, Object> session, String token) {
+    private void verifySession(Map<String, Object> session, Long expectedUserId, String token) {
         assertSessionColumns(session);
 
         String expectedTokenHash = TestDataFactory.hashToken(token);
         assertThat(session.get("token_hash")).isEqualTo(expectedTokenHash);
-        assertThat(session.get("user_id")).isEqualTo(EXPECTED_USER_ID);
+        assertThat(session.get("user_id")).isEqualTo(expectedUserId);
 
         Timestamp createdAt = (Timestamp) session.get("created_at");
         Timestamp expiresAt = (Timestamp) session.get("expires_at");
