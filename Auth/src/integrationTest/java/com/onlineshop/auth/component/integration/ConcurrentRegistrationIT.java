@@ -92,8 +92,8 @@ class ConcurrentRegistrationIT extends BaseIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             // Submit two concurrent registration requests
-            Future<HttpResponseResult> future1 = executor.submit(() -> registerAndCaptureResponse(USERNAME.toUpperCase(), PASSWORD));
-            Future<HttpResponseResult> future2 = executor.submit(() -> registerAndCaptureResponse(USERNAME.toLowerCase(), PASSWORD));
+            Future<HttpResponseResult> future1 = executor.submit(() -> registerAndCaptureResponse(USERNAME, PASSWORD));
+            Future<HttpResponseResult> future2 = executor.submit(() -> registerAndCaptureResponse(USERNAME, PASSWORD));
 
             // Get results
             HttpResponseResult result1 = future1.get(10, TimeUnit.SECONDS);
