@@ -1,6 +1,7 @@
 package com.onlineshop.auth.controller;
 
 import com.onlineshop.auth.dto.*;
+import com.onlineshop.auth.exception.InvalidTokenException;
 import com.onlineshop.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,9 +36,9 @@ public class AuthController {
     }
 
     private String extractToken(String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer: ")) {
-            return authHeader.substring(8);
+        if (authHeader == null || !authHeader.startsWith("Bearer: ")) {
+            throw new InvalidTokenException();
         }
-        return authHeader;
+        return authHeader.substring(8);
     }
 }

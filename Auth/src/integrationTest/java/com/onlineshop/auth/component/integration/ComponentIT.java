@@ -180,6 +180,40 @@ class ComponentIT extends BaseIntegrationTest {
         );
     }
 
+    // ==================== Token Validation Error Tests ====================
+
+    @Test
+    void validate_withMissingBearerPrefix_returnsUnauthorized() throws Exception {
+        log.info("Testing token validation without Bearer prefix");
+
+        ErrorResponse errorResponse = validateTokenExpectingError("some-token-without-bearer-prefix");
+
+        assertErrorResponse(
+                errorResponse,
+                HttpStatus.UNAUTHORIZED,
+                "https://api.onlineshop.com/errors/invalid-token",
+                "Unauthorized",
+                VALIDATE_PATH
+        );
+    }
+
+    @Test
+    void validate_withInvalidRandomToken_returnsUnauthorized() throws Exception {
+        log.info("Testing token validation with invalid random token");
+
+        // A properly formatted but non-existent/invalid token
+        String randomToken = "abc123-invalid-random-token-xyz789";
+        ErrorResponse errorResponse = validateTokenExpectingError("Bearer: " + randomToken);
+
+        assertErrorResponse(
+                errorResponse,
+                HttpStatus.UNAUTHORIZED,
+                "https://api.onlineshop.com/errors/invalid-token",
+                "Unauthorized",
+                VALIDATE_PATH
+        );
+    }
+
     // ==================== Username Uniqueness Tests ====================
 
     /**
@@ -246,6 +280,18 @@ class ComponentIT extends BaseIntegrationTest {
                 .returnResult(String.class);
 
         return objectMapper.readValue(result.getResponseBody(), ValidateResponse.class);
+    }
+
+    private ErrorResponse validateTokenExpectingError(String authHeader) throws Exception {
+        log.info("Validating token expecting error");
+        var result = restTestClient.get()
+                .uri(VALIDATE_PATH)
+                .header("Authorization", authHeader)
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .returnResult(String.class);
+
+        return objectMapper.readValue(result.getResponseBody(), ErrorResponse.class);
     }
 
     private <T> T postRequest(String uri, Object body, Class<T> responseType, HttpStatus expectedStatus) throws Exception {
