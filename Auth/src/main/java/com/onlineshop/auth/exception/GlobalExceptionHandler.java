@@ -6,11 +6,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+
+import jakarta.validation.ConstraintViolationException;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -73,6 +78,28 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            MethodArgumentNotValidException ex,
+            WebRequest request) {
+        // Collect all validation error messages with field names
+        String validationErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+
+        logger.warn("Validation failed on {}: {}", request.getDescription(false), validationErrors);
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("https://api.onlineshop.com/errors/validation-failed")
+                .title("Bad Request")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .detail("Validation failed: " + validationErrors)
+                .instance(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(InvalidUsernameOrPasswordException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
             InvalidUsernameOrPasswordException ex,
@@ -101,6 +128,81 @@ public class GlobalExceptionHandler {
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(
+            MissingRequestHeaderException ex,
+            WebRequest request) {
+        String headerName = ex.getHeaderName();
+
+        // For Authorization header, return 401 Unauthorized
+        if ("Authorization".equalsIgnoreCase(headerName)) {
+            logger.warn("Missing Authorization header on {}", request.getDescription(false));
+
+            ErrorResponse errorResponse = ErrorResponse.builder()
+                    .type("https://api.onlineshop.com/errors/missing-authorization")
+                    .title("Unauthorized")
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .detail("Authorization header is required.")
+                    .instance(request.getDescription(false).replace("uri=", ""))
+                    .build();
+
+            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+        }
+
+        // For other headers, return 400 Bad Request
+        logger.warn("Missing required header '{}' on {}", headerName, request.getDescription(false));
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("https://api.onlineshop.com/errors/missing-header")
+                .title("Bad Request")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .detail("Required header '" + headerName + "' is missing.")
+                .instance(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+            ConstraintViolationException ex,
+            WebRequest request) {
+        String violations = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining(", "));
+
+        // Check if it's an Authorization header violation
+        boolean isAuthViolation = ex.getConstraintViolations().stream()
+                .anyMatch(v -> v.getPropertyPath().toString().contains("authHeader"));
+
+        if (isAuthViolation) {
+            logger.warn("Authorization header validation failed on {}: {}",
+                    request.getDescription(false), violations);
+
+            ErrorResponse errorResponse = ErrorResponse.builder()
+                    .type("https://api.onlineshop.com/errors/invalid-authorization")
+                    .title("Unauthorized")
+                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .detail("Authorization header is required.")
+                    .instance(request.getDescription(false).replace("uri=", ""))
+                    .build();
+
+            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+        }
+
+        logger.warn("Constraint violation on {}: {}", request.getDescription(false), violations);
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("https://api.onlineshop.com/errors/validation-failed")
+                .title("Bad Request")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .detail("Validation failed: " + violations)
+                .instance(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)

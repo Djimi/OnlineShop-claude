@@ -21,7 +21,7 @@ public abstract class BaseIntegrationTest {
     @Container
     @ServiceConnection
     @SuppressWarnings("resource")
-    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine")
+    public static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine")
             .withDatabaseName("auth_test")
             .withUsername("test")
             .withPassword("test")
