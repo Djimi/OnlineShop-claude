@@ -68,7 +68,6 @@ class ConcurrentRegistrationIT extends BaseIntegrationTest {
     void concurrentRegistration_whenBothThreadsPassExistsCheck_oneSucceedsAndOtherReturnsConflict() throws Exception {
         // Latch to synchronize both threads at the exists check
         // When both threads call countDown(), both await() calls unblock simultaneously
-        log.info("Port of container dpm is: {}", BaseIntegrationTest.postgres.getFirstMappedPort());
         CountDownLatch bothThreadsReachedCheck = new CountDownLatch(2);
 
         // Spy on existsByNormalizedUsername to coordinate both threads
