@@ -16,6 +16,7 @@
  */
 
 import { group, sleep } from 'k6';
+import exec from 'k6/execution';
 import { getAuthServiceUrl } from './config/environments.js';
 import { generateSmokeThresholds } from './config/thresholds.js';
 import {
@@ -51,20 +52,22 @@ export function setup() {
     console.log(`Target: ${BASE_URL}`);
     console.log('');
 
-    // Create a test user for login tests
+    // Create a test user for login tests with unique username
+    // Format: testUser_<ISO8601-date>_<vu-id>
+    const timestamp = new Date().toISOString().split('.')[0]; // ISO 8601: YYYY-MM-DDTHH:MM:SS
+    const vuId = exec.vu.idInTest;
+
     const testUser = {
-        username: 'smoke_test_user',
+        username: `testUser_${timestamp}_${vuId}`,
         password: 'SmokeTest123!',
     };
 
-    // Try to register the test user (may already exist)
+    // Try to register the test user (should not already exist due to unique username)
     const registerRes = register(BASE_URL, testUser.username, testUser.password);
     if (registerRes.status === 201) {
         console.log(`Created test user: ${testUser.username}`);
-    } else if (registerRes.status === 409) {
-        console.log(`Test user already exists: ${testUser.username}`);
     } else {
-        console.warn(`Failed to create test user: ${registerRes.status}`);
+        throw new Error(`Failed to create test user: ${registerRes.status} - ${registerRes.body}`);
     }
 
     return { testUser };

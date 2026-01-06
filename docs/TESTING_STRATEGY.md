@@ -6,7 +6,7 @@
 
 > Important 
 >
-> In tests always use version for 3th party technologies listed in the docker-compose file in the root dir - Postgres, Redis, etc.
+> In tests always use version for 3th party technologies listed in the docker compose file in the root dir - Postgres, Redis, etc.
 
 ## Philosophy
 

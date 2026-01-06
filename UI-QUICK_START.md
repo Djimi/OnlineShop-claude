@@ -4,7 +4,7 @@
 
 ### Terminal 1: Start Backend
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Terminal 2: Start Frontend
@@ -67,7 +67,7 @@ npm run lint      # Check code quality
 | Problem | Solution |
 |---------|----------|
 | Port 5173 in use | Vite auto-uses next port |
-| Backend error | Run `docker-compose ps` to check services |
+| Backend error | Run `docker compose ps` to check services |
 | Build fails | `rm -rf node_modules && npm install` |
 | Token expired | Log out and log back in |
 
@@ -141,7 +141,7 @@ npm run lint      # Check code quality
 
 1. Check `FRONTEND_SETUP.md` for detailed guide
 2. Review error messages in Console
-3. Check backend services status: `docker-compose ps`
+3. Check backend services status: `docker compose ps`
 4. Verify API Gateway is running on port 10000
 
 ---

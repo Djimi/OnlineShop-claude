@@ -60,7 +60,7 @@ export function generateThresholds(includeCustomMetrics = true) {
 export function generateSmokeThresholds() {
     return {
         'http_req_duration': ['p(95)<2000'],  // Very generous for smoke
-        'http_req_failed': ['rate<0.1'],      // Allow up to 10% errors in smoke
+        'http_req_failed': ['rate<0.001'],      // Allow up to 10% errors in smoke
     };
 }
 
