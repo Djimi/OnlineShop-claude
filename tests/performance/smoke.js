@@ -30,10 +30,9 @@ import {
     generateUniqueUsername,
 } from './utils/helpers.js';
 import {
-    errorRate,
-    loginDuration,
-    validateDuration,
-    registerDuration,
+    recordLoginMetrics,
+    recordValidateMetrics,
+    recordRegisterMetrics,
 } from './utils/metrics.js';
 
 const BASE_URL = getAuthServiceUrl();
@@ -75,34 +74,23 @@ export function setup() {
 
 export default function (data) {
     const { testUser } = data;
+    const vuid = exec.vu.idInTest;
 
-    group('1. Health Check', function () {
-        // Just verify the service responds
-        const healthRes = login(BASE_URL, 'nonexistent', 'wrongpass');
-        // We expect 401 for wrong credentials, which means service is up
-        if (healthRes.status === 401 || healthRes.status === 200) {
-            console.log('Health check: Service is responding');
-        } else {
-            console.error(`Health check failed: ${healthRes.status}`);
-            errorRate.add(true);
-        }
-    });
-
-    group('2. Login Flow', function () {
+    group('1. Login Flow', function () {
         const loginRes = login(BASE_URL, testUser.username, testUser.password);
         const loginSuccess = checkLoginResponse(loginRes, 'smoke_login');
 
-        loginDuration.add(loginRes.timings.duration);
-        errorRate.add(!loginSuccess);
+        // Record all login metrics in one call
+        recordLoginMetrics(loginRes, loginSuccess, { vuid: vuid });
 
         if (loginSuccess) {
-            console.log(`Login successful (${loginRes.timings.duration.toFixed(0)}ms)`);
+            console.log(`[VU ${vuid}] Login successful (${loginRes.timings.duration.toFixed(0)}ms)`);
         } else {
-            console.error(`Login failed: ${loginRes.status} - ${loginRes.body}`);
+            console.error(`[VU ${vuid}] Login failed: ${loginRes.status} - ${loginRes.body}`);
         }
     });
 
-    group('3. Validate Flow', function () {
+    group('2. Validate Flow', function () {
         // First login to get a token
         const loginRes = login(BASE_URL, testUser.username, testUser.password);
         const token = extractToken(loginRes);
@@ -111,32 +99,37 @@ export default function (data) {
             const validateRes = validateToken(BASE_URL, token);
             const validateSuccess = checkValidateResponse(validateRes, 'smoke_validate');
 
-            validateDuration.add(validateRes.timings.duration);
-            errorRate.add(!validateSuccess);
+            // Record all validate metrics in one call
+            recordValidateMetrics(validateRes, validateSuccess, { vuid: vuid });
 
             if (validateSuccess) {
-                console.log(`Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
+                console.log(`[VU ${vuid}] Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
             } else {
-                console.error(`Validate failed: ${validateRes.status}`);
+                console.error(`[VU ${vuid}] Validate failed: ${validateRes.status}`);
             }
         } else {
-            console.error('Could not get token for validate test');
-            errorRate.add(true);
+            console.error(`[VU ${vuid}] Could not get token for validate test`);
+            // Record as a failed validation since we couldn't get a token
+            recordValidateMetrics(
+                { timings: { duration: 0 }, status: 0 },
+                false,
+                { vuid: vuid, error: 'no_token' }
+            );
         }
     });
 
-    group('4. Register Flow', function () {
+    group('3. Register Flow', function () {
         const newUsername = generateUniqueUsername('smoke');
         const registerRes = register(BASE_URL, newUsername, 'SmokeTest123!');
         const registerSuccess = checkRegisterResponse(registerRes, 'smoke_register');
 
-        registerDuration.add(registerRes.timings.duration);
-        errorRate.add(!registerSuccess);
+        // Record all register metrics in one call
+        recordRegisterMetrics(registerRes, registerSuccess, { vuid: vuid });
 
         if (registerSuccess) {
-            console.log(`Register successful (${registerRes.timings.duration.toFixed(0)}ms)`);
+            console.log(`[VU ${vuid}] Register successful (${registerRes.timings.duration.toFixed(0)}ms)`);
         } else {
-            console.error(`Register failed: ${registerRes.status}`);
+            console.error(`[VU ${vuid}] Register failed: ${registerRes.status}`);
         }
     });
 

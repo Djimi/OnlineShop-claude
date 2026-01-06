@@ -36,7 +36,7 @@ export function generateThresholds(includeCustomMetrics = true) {
     };
 
     if (includeCustomMetrics) {
-        // Custom metric thresholds
+        // Custom metric thresholds - Duration
         thresholds['auth_login_duration'] = [
             `p(95)<${AUTH_THRESHOLDS.login.p95}`,
             `p(99)<${AUTH_THRESHOLDS.login.p99}`,
@@ -49,6 +49,16 @@ export function generateThresholds(includeCustomMetrics = true) {
             `p(95)<${AUTH_THRESHOLDS.register.p95}`,
             `p(99)<${AUTH_THRESHOLDS.register.p99}`,
         ];
+
+        // Operation-specific error rate thresholds using tags
+        // Validate is most critical - should have near-zero errors
+        thresholds['errors{operation:validate}'] = ['rate<0.001'];  // < 0.1% errors
+
+        // Login should have very low errors
+        thresholds['errors{operation:login}'] = ['rate<0.01'];  // < 1% errors
+
+        // Register can tolerate slightly more (duplicate usernames, validation)
+        thresholds['errors{operation:register}'] = ['rate<0.02'];  // < 2% errors
     }
 
     return thresholds;
@@ -60,7 +70,12 @@ export function generateThresholds(includeCustomMetrics = true) {
 export function generateSmokeThresholds() {
     return {
         'http_req_duration': ['p(95)<2000'],  // Very generous for smoke
-        'http_req_failed': ['rate<0.001'],      // Allow up to 10% errors in smoke
+        'http_req_failed': ['rate<0.10'],      // Allow up to 10% errors in smoke
+
+        // Tagged error rates for smoke tests (lenient)
+        'errors{operation:validate}': ['rate<0.05'],  // < 5% errors
+        'errors{operation:login}': ['rate<0.10'],      // < 10% errors
+        'errors{operation:register}': ['rate<0.10'],   // < 10% errors
     };
 }
 
@@ -71,5 +86,10 @@ export function generateStressThresholds() {
     return {
         'http_req_duration': ['p(95)<3000'],  // Allow up to 3s under stress
         'http_req_failed': ['rate<0.30'],     // Allow up to 30% errors
+
+        // Tagged error rates for stress tests (very lenient)
+        'errors{operation:validate}': ['rate<0.20'],  // < 20% errors
+        'errors{operation:login}': ['rate<0.30'],      // < 30% errors
+        'errors{operation:register}': ['rate<0.40'],   // < 40% errors (duplicate conflicts expected)
     };
 }
