@@ -117,9 +117,10 @@ export function generateUniqueUsername(prefix = 'perf_user') {
  *
  * @param {object} response - The HTTP response
  * @param {string} context - Context string for check messages
+ * @param {object} tags - Tags for the check (for threshold filtering)
  * @returns {boolean} - Whether all checks passed
  */
-export function checkLoginResponse(response, context = 'login') {
+export function checkLoginResponse(response, context = 'login', tags = { operation: 'login' }) {
     return check(response, {
         [context]: (r) => {
             if (r.status !== 200) return false;
@@ -130,7 +131,7 @@ export function checkLoginResponse(response, context = 'login') {
                 return false;
             }
         },
-    });
+    }, tags);
 }
 
 /**
@@ -138,12 +139,13 @@ export function checkLoginResponse(response, context = 'login') {
  *
  * @param {object} response - The HTTP response
  * @param {string} context - Context string for check messages
+ * @param {object} tags - Tags for the check (for threshold filtering)
  * @returns {boolean} - Whether all checks passed
  */
-export function checkValidateResponse(response, context = 'validate') {
+export function checkValidateResponse(response, context = 'validate', tags = { operation: 'validate' }) {
     return check(response, {
         [context]: (r) => r.status === 200,
-    });
+    }, tags);
 }
 
 /**
@@ -151,12 +153,13 @@ export function checkValidateResponse(response, context = 'validate') {
  *
  * @param {object} response - The HTTP response
  * @param {string} context - Context string for check messages
+ * @param {object} tags - Tags for the check (for threshold filtering)
  * @returns {boolean} - Whether all checks passed
  */
-export function checkRegisterResponse(response, context = 'register') {
+export function checkRegisterResponse(response, context = 'register', tags = { operation: 'register' }) {
     return check(response, {
         [context]: (r) => r.status === 201 || r.status === 409,
-    });
+    }, tags);
 }
 
 /**

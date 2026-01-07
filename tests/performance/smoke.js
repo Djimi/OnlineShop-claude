@@ -78,8 +78,10 @@ export default function (data) {
     const iter = exec.vu.iterationInInstance;
 
     group('1. Login Flow', function () {
-        const loginRes = login(BASE_URL, testUser.username, testUser.password);
-        const loginSuccess = checkLoginResponse(loginRes, 'smoke_login');
+        // Simulate failure on first iteration (use wrong password)
+        const password = iter === 0 ? 'WRONG_PASSWORD' : testUser.password;
+        const loginRes = login(BASE_URL, testUser.username, password);
+        const loginSuccess = checkLoginResponse(loginRes);
 
         // Record all login metrics in one call
         recordLoginMetrics(loginRes, loginSuccess, { vuid: vuid });
@@ -98,7 +100,7 @@ export default function (data) {
 
         if (token) {
             const validateRes = validateToken(BASE_URL, token);
-            const validateSuccess = checkValidateResponse(validateRes, 'smoke_validate');
+            const validateSuccess = checkValidateResponse(validateRes);
 
             // Record all validate metrics in one call
             recordValidateMetrics(validateRes, validateSuccess, { vuid: vuid });
@@ -122,7 +124,7 @@ export default function (data) {
     group('3. Register Flow', function () {
         const newUsername = generateUniqueUsername('smoke');
         const registerRes = register(BASE_URL, newUsername, 'SmokeTest123!');
-        const registerSuccess = checkRegisterResponse(registerRes, 'smoke_register');
+        const registerSuccess = checkRegisterResponse(registerRes);
 
         // Record all register metrics in one call
         recordRegisterMetrics(registerRes, registerSuccess, { vuid: vuid });

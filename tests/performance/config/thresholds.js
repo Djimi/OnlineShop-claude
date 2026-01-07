@@ -71,10 +71,10 @@ export function generateSmokeThresholds() {
         'http_req_failed{operation:validate}': ['rate<0.01'],
         'http_req_failed{operation:register}': ['rate<0.01'],
 
-        // Per-check success rate thresholds
-        'checks{name:smoke_login}': ['rate>0.98'],       // 98% success rate
-        'checks{name:smoke_validate}': ['rate>0.99'],    // 99% success rate
-        'checks{name:smoke_register}': ['rate>0.98'],    // 98% success rate
+        // Per-check success rate thresholds (using check tags)
+        'checks{operation:login}': ['rate>0.98'],       // 98% success rate
+        'checks{operation:validate}': ['rate>0.99'],    // 99% success rate
+        'checks{operation:register}': ['rate>0.98'],    // 98% success rate
     };
 }
 
