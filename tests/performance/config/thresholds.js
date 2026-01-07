@@ -3,65 +3,57 @@
  *
  * These thresholds define the performance requirements for each endpoint.
  * Tests will fail if these thresholds are not met.
+ *
+ * Uses k6's built-in http_req_duration with operation tags for per-endpoint metrics.
  */
 
 export const AUTH_THRESHOLDS = {
-    // Login endpoint - includes BCrypt password verification
+    // Login endpoint - includes Argon2id password verification
     login: {
-        p95: 300,  // 95% of requests under 300ms
-        p99: 500,  // 99% of requests under 500ms
+        p95: 400,  // 95% of requests under 400ms
+        p99: 600,  // 99% of requests under 600ms
+        errorRate: 0.01,  // < 1% errors
     },
 
     // Validate endpoint - critical path, must be fast
     validate: {
-        p95: 50,   // 95% of requests under 50ms
-        p99: 100,  // 99% of requests under 100ms
+        p95: 70,   // 95% of requests under 70ms
+        p99: 150,  // 99% of requests under 150ms
+        errorRate: 0.001,  // < 0.1% errors (most critical)
     },
 
-    // Register endpoint - includes BCrypt hashing (CPU intensive)
+    // Register endpoint - includes Argon2id hashing (CPU intensive)
     register: {
-        p95: 500,  // 95% of requests under 500ms
-        p99: 800,  // 99% of requests under 800ms
+        p95: 400,  // 95% of requests under 400ms
+        p99: 700,  // 99% of requests under 700ms
+        errorRate: 0.02,  // < 2% errors (duplicates expected)
     },
 };
 
 /**
- * Generate k6 threshold configuration object
+ * Generate k6 threshold configuration object for load tests
  */
-export function generateThresholds(includeCustomMetrics = true) {
-    const thresholds = {
-        // Global HTTP thresholds
-        'http_req_duration': ['p(95)<500', 'p(99)<1000'],
-        'http_req_failed': ['rate<0.01'],  // Less than 1% errors
-    };
-
-    if (includeCustomMetrics) {
-        // Custom metric thresholds - Duration
-        thresholds['auth_login_duration'] = [
+export function generateThresholds() {
+    return {
+        // Per-operation duration thresholds (using tags)
+        'http_req_duration{operation:login}': [
             `p(95)<${AUTH_THRESHOLDS.login.p95}`,
             `p(99)<${AUTH_THRESHOLDS.login.p99}`,
-        ];
-        thresholds['auth_validate_duration'] = [
+        ],
+        'http_req_duration{operation:validate}': [
             `p(95)<${AUTH_THRESHOLDS.validate.p95}`,
             `p(99)<${AUTH_THRESHOLDS.validate.p99}`,
-        ];
-        thresholds['auth_register_duration'] = [
+        ],
+        'http_req_duration{operation:register}': [
             `p(95)<${AUTH_THRESHOLDS.register.p95}`,
             `p(99)<${AUTH_THRESHOLDS.register.p99}`,
-        ];
+        ],
 
-        // Operation-specific error rate thresholds using tags
-        // Validate is most critical - should have near-zero errors
-        thresholds['errors{operation:validate}'] = ['rate<0.001'];  // < 0.1% errors
-
-        // Login should have very low errors
-        thresholds['errors{operation:login}'] = ['rate<0.01'];  // < 1% errors
-
-        // Register can tolerate slightly more (duplicate usernames, validation)
-        thresholds['errors{operation:register}'] = ['rate<0.02'];  // < 2% errors
-    }
-
-    return thresholds;
+        // Per-operation error rate thresholds
+        'http_req_failed{operation:login}': [`rate<${AUTH_THRESHOLDS.login.errorRate}`],
+        'http_req_failed{operation:validate}': [`rate<${AUTH_THRESHOLDS.validate.errorRate}`],
+        'http_req_failed{operation:register}': [`rate<${AUTH_THRESHOLDS.register.errorRate}`],
+    };
 }
 
 /**
@@ -69,13 +61,15 @@ export function generateThresholds(includeCustomMetrics = true) {
  */
 export function generateSmokeThresholds() {
     return {
-        'http_req_duration': ['p(95)<2000'],  // Very generous for smoke
-        'http_req_failed': ['rate<0.10'],      // Allow up to 10% errors in smoke
+        // Per-operation duration (lenient for smoke)
+        'http_req_duration{operation:login}': ['p(95)<400'],
+        'http_req_duration{operation:validate}': ['p(95)<70'],
+        'http_req_duration{operation:register}': ['p(95)<400'],
 
-        // Tagged error rates for smoke tests (lenient)
-        'errors{operation:validate}': ['rate<0.05'],  // < 5% errors
-        'errors{operation:login}': ['rate<0.10'],      // < 10% errors
-        'errors{operation:register}': ['rate<0.10'],   // < 10% errors
+        // Per-operation error rates (lenient)
+        'http_req_failed{operation:login}': ['rate<0.1'],
+        'http_req_failed{operation:validate}': ['rate<0.01'],
+        'http_req_failed{operation:register}': ['rate<0.01'],
     };
 }
 
@@ -84,12 +78,14 @@ export function generateSmokeThresholds() {
  */
 export function generateStressThresholds() {
     return {
-        'http_req_duration': ['p(95)<3000'],  // Allow up to 3s under stress
-        'http_req_failed': ['rate<0.30'],     // Allow up to 30% errors
+        // Per-operation duration (very lenient under stress)
+        'http_req_duration{operation:login}': ['p(95)<2000'],
+        'http_req_duration{operation:validate}': ['p(95)<500'],
+        'http_req_duration{operation:register}': ['p(95)<2000'],
 
-        // Tagged error rates for stress tests (very lenient)
-        'errors{operation:validate}': ['rate<0.20'],  // < 20% errors
-        'errors{operation:login}': ['rate<0.30'],      // < 30% errors
-        'errors{operation:register}': ['rate<0.40'],   // < 40% errors (duplicate conflicts expected)
+        // Per-operation error rates (allow degradation)
+        'http_req_failed{operation:login}': ['rate<0.30'],
+        'http_req_failed{operation:validate}': ['rate<0.20'],
+        'http_req_failed{operation:register}': ['rate<0.40'],
     };
 }

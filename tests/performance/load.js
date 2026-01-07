@@ -66,7 +66,7 @@ export const options = {
             gracefulRampDown: '30s',
         },
     },
-    thresholds: generateThresholds(true),
+    thresholds: generateThresholds(),
 };
 
 // Shared state for tokens (VU-local)
