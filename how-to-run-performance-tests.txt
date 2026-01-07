@@ -21,29 +21,29 @@ QUICK START - Running Tests in Docker
 
 2. Stop any existing containers:
    docker compose down
-   docker compose -f tests/performance/docker compose.perf.yml down
+   docker compose -f tests/performance/docker-compose.perf.yml down
 
 3. Start the performance test environment (Auth service + Database):
-   docker compose -f tests/performance/docker compose.perf.yml up -d
+   docker compose -f tests/performance/docker-compose.perf.yml up -d
 
 4. Wait for services to be healthy (usually 30-60 seconds):
-   docker compose -f tests/performance/docker compose.perf.yml ps
+   docker compose -f tests/performance/docker-compose.perf.yml ps
 
    You should see both services as "healthy"
 
 5. Run the tests using k6 in Docker:
 
    a) Smoke Test (Quick sanity check, ~2 minutes):
-      docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker smoke.js
+      docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker smoke.js
 
    b) Load Test (Realistic traffic, ~10 minutes):
-      docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker load.js
+      docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker load.js
 
    c) Stress Test (Find limits, ~20 minutes):
-      docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker stress.js
+      docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker stress.js
 
 6. Stop the environment when done:
-   docker compose -f tests/performance/docker compose.perf.yml down
+   docker compose -f tests/performance/docker-compose.perf.yml down
 
 ================================================================================
 UNDERSTANDING THE TEST TYPES
@@ -54,21 +54,21 @@ SMOKE TEST (smoke.js)
 - Duration: ~2 minutes
 - Load: 1 VU, 10 iterations
 - When: Run on every PR or before other tests
-- Command: docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker smoke.js
+- Command: docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker smoke.js
 
 LOAD TEST (load.js)
 - Purpose: Test under realistic/expected traffic
 - Duration: ~10 minutes
 - Load: 20-50 VUs with realistic ramp-up
 - When: Run nightly or before releases
-- Command: docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker load.js
+- Command: docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker load.js
 
 STRESS TEST (stress.js)
 - Purpose: Find breaking points and limits
 - Duration: ~20 minutes
 - Load: 0 → 50 → 100 → 200 → 300 VUs
 - When: Run weekly or when investigating capacity
-- Command: docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker stress.js
+- Command: docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker stress.js
 
 ================================================================================
 TRAFFIC MIX
@@ -125,7 +125,7 @@ FINDING THE SERVICE LIMIT
 To find the maximum capacity of the Auth service:
 
 1. Start with the stress test:
-   docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker stress.js
+   docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker stress.js
 
 2. Watch the results at each load level:
    - 50 VUs: Should pass all thresholds
@@ -155,13 +155,13 @@ ADVANCED USAGE
 ================================================================================
 
 1. Save Results to File:
-   docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run \
+   docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run \
      -e ENV=docker \
      --out json=/tests/reports/my-test.json \
      stress.js
 
 2. Run with Custom Options:
-   docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run \
+   docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run \
      -e ENV=docker \
      --vus 100 \
      --duration 5m \
@@ -172,15 +172,15 @@ ADVANCED USAGE
    docker logs -f perf-auth-service
 
    # Terminal 2: Run test
-   docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run -e ENV=docker stress.js
+   docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run -e ENV=docker stress.js
 
 4. Compare Results:
    # Baseline
-   docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run \
+   docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run \
      -e ENV=docker --out json=/tests/baselines/baseline.json load.js
 
    # After changes
-   docker compose -f tests/performance/docker compose.perf.yml run --rm k6 run \
+   docker compose -f tests/performance/docker-compose.perf.yml run --rm k6 run \
      -e ENV=docker --out json=/tests/reports/after-changes.json load.js
 
 ================================================================================
@@ -190,7 +190,7 @@ TROUBLESHOOTING
 Problem: "Service not responding"
 Solution:
   1. Check if services are running:
-     docker compose -f tests/performance/docker compose.perf.yml ps
+     docker compose -f tests/performance/docker-compose.perf.yml ps
   2. Check service logs:
      docker logs perf-auth-service
   3. Verify health:
@@ -214,17 +214,17 @@ Solution:
 Problem: "Cannot find test files"
 Solution:
   - Ensure you're in tests/performance directory or use full paths
-  - Verify volume mounts: docker compose -f tests/performance/docker compose.perf.yml config
+  - Verify volume mounts: docker compose -f tests/performance/docker-compose.perf.yml config
 
 ================================================================================
 CLEANUP
 ================================================================================
 
 Full cleanup (removes all data):
-  docker compose -f tests/performance/docker compose.perf.yml down -v
+  docker compose -f tests/performance/docker-compose.perf.yml down -v
 
 Keep data for next run:
-  docker compose -f tests/performance/docker compose.perf.yml down
+  docker compose -f tests/performance/docker-compose.perf.yml down
 
 Remove only k6 container:
   docker rm perf-k6
@@ -237,7 +237,7 @@ Test Scripts:      tests/performance/*.js
 Configuration:     tests/performance/config/
 Test Results:      tests/performance/reports/
 Baseline Results:  tests/performance/baselines/
-Docker Compose:    tests/performance/docker compose.perf.yml
+Docker Compose:    tests/performance/docker-compose.perf.yml
 This Guide:        how-to-run-performance-tests.txt
 
 ================================================================================

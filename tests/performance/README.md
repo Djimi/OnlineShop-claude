@@ -42,10 +42,10 @@ docker pull grafana/k6
 
 ```bash
 # From the repository root
-docker compose -f tests/performance/docker compose.perf.yml up -d
+docker compose -f tests/performance/docker-compose.perf.yml up -d
 
 # Wait for services to be healthy
-docker compose -f tests/performance/docker compose.perf.yml ps
+docker compose -f tests/performance/docker-compose.perf.yml ps
 ```
 
 ### 2. Run Smoke Test (Quick Sanity Check)
@@ -70,7 +70,7 @@ k6 run stress.js
 ### 5. Stop the Environment
 
 ```bash
-docker compose -f tests/performance/docker compose.perf.yml down -v
+docker compose -f tests/performance/docker-compose.perf.yml down -v
 ```
 
 ## Test Types
@@ -105,7 +105,7 @@ tests/performance/
 ├── smoke.js                     # Smoke test
 ├── load.js                      # Load test
 ├── stress.js                    # Stress test
-├── docker compose.perf.yml      # Test environment
+├── docker-compose.perf.yml      # Test environment
 │
 ├── config/
 │   ├── thresholds.js            # SLO definitions
@@ -196,7 +196,7 @@ k6 run load.js
 
 1. Check if the service is running:
    ```bash
-   docker compose -f tests/performance/docker compose.perf.yml ps
+   docker compose -f tests/performance/docker-compose.perf.yml ps
    ```
 
 2. Check service logs:

@@ -4,9 +4,9 @@
 # for isolated performance testing.
 #
 # Usage:
-#   docker compose -f docker compose.perf.yml up -d
+#   docker compose -f docker-compose.perf.yml up -d
 #   k6 run tests/performance/smoke.js
-#   docker compose -f docker compose.perf.yml down
+#   docker compose -f docker-compose.perf.yml down
 
 services:
   # ==================== AUTH DATABASE ====================

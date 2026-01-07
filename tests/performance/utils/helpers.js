@@ -111,7 +111,7 @@ export function generateUniqueUsername(prefix = 'perf_user') {
  */
 export function checkLoginResponse(response, context = 'login') {
     return check(response, {
-        [`${context} status is 200`]: (r) => r.status === 202,
+        [`${context} status is 200`]: (r) => r.status === 200,
         [`${context} has token`]: (r) => {
             try {
                 const body = JSON.parse(r.body);
