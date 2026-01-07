@@ -77,13 +77,11 @@ export default function (data) {
     const vuid = exec.vu.idInTest;
     const iter = exec.vu.iterationInInstance;
 
-    group('1. Login Flow', function () {
-        // Simulate failure on first iteration (use wrong password)
-        const password = iter === 0 ? 'WRONG_PASSWORD' : testUser.password;
-        const loginRes = login(BASE_URL, testUser.username, password);
+    // 1 Login
+    group('Login Flow', function () {
+        const loginRes = login(BASE_URL, testUser.username, testUser.password);
         const loginSuccess = checkLoginResponse(loginRes);
 
-        // Record all login metrics in one call
         recordLoginMetrics(loginRes, loginSuccess, { vuid: vuid });
 
         if (loginSuccess) {
@@ -93,40 +91,12 @@ export default function (data) {
         }
     });
 
-    group('2. Validate Flow', function () {
-        // First login to get a token
-        const loginRes = login(BASE_URL, testUser.username, testUser.password);
-        const token = extractToken(loginRes);
-
-        if (token) {
-            const validateRes = validateToken(BASE_URL, token);
-            const validateSuccess = checkValidateResponse(validateRes);
-
-            // Record all validate metrics in one call
-            recordValidateMetrics(validateRes, validateSuccess, { vuid: vuid });
-
-            if (validateSuccess) {
-                console.log(`[VU ${vuid}, Iter ${iter}] Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
-            } else {
-                console.error(`[VU ${vuid}, Iter ${iter}] Validate failed: ${validateRes.status}`);
-            }
-        } else {
-            console.error(`[VU ${vuid}, Iter ${iter}] Could not get token for validate test`);
-            // Record as a failed validation since we couldn't get a token
-            recordValidateMetrics(
-                { timings: { duration: 0 }, status: 0 },
-                false,
-                { vuid: vuid, error: 'no_token' }
-            );
-        }
-    });
-
-    group('3. Register Flow', function () {
+    // 1 Register
+    group('Register Flow', function () {
         const newUsername = generateUniqueUsername('smoke');
         const registerRes = register(BASE_URL, newUsername, 'SmokeTest123!');
         const registerSuccess = checkRegisterResponse(registerRes);
 
-        // Record all register metrics in one call
         recordRegisterMetrics(registerRes, registerSuccess, { vuid: vuid });
 
         if (registerSuccess) {
@@ -135,6 +105,34 @@ export default function (data) {
             console.error(`[VU ${vuid}, Iter ${iter}] Register failed: ${registerRes.status}`);
         }
     });
+
+    // 8 Validates
+    for (let i = 0; i < 8; i++) {
+        group(`Validate Flow ${i + 1}`, function () {
+            const loginRes = login(BASE_URL, testUser.username, testUser.password);
+            const token = extractToken(loginRes);
+
+            if (token) {
+                const validateRes = validateToken(BASE_URL, token);
+                const validateSuccess = checkValidateResponse(validateRes);
+
+                recordValidateMetrics(validateRes, validateSuccess, { vuid: vuid });
+
+                if (validateSuccess) {
+                    console.log(`[VU ${vuid}, Iter ${iter}] Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
+                } else {
+                    console.error(`[VU ${vuid}, Iter ${iter}] Validate failed: ${validateRes.status}`);
+                }
+            } else {
+                console.error(`[VU ${vuid}, Iter ${iter}] Could not get token for validate test`);
+                recordValidateMetrics(
+                    { timings: { duration: 0 }, status: 0 },
+                    false,
+                    { vuid: vuid, error: 'no_token' }
+                );
+            }
+        });
+    }
 
     sleep(1);
 }
