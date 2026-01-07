@@ -5,6 +5,7 @@ NEXT:
 - Improve the perf tests - what is printed, whether we should split login/register/validate metrics, etc
 - Check reports of perf tests
 - Check hibernate requests executed
+- Check why register threshold is so much higher than login
 - Read about actuator (Gemini)
 - Change liveness checks for the services
 

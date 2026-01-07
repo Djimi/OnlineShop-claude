@@ -121,8 +121,8 @@ export function generateUniqueUsername(prefix = 'perf_user') {
  */
 export function checkLoginResponse(response, context = 'login') {
     return check(response, {
-        [`${context} status is 200`]: (r) => r.status === 200,
-        [`${context} has token`]: (r) => {
+        [context]: (r) => {
+            if (r.status !== 200) return false;
             try {
                 const body = JSON.parse(r.body);
                 return body.token !== undefined && body.token !== null;
@@ -142,7 +142,7 @@ export function checkLoginResponse(response, context = 'login') {
  */
 export function checkValidateResponse(response, context = 'validate') {
     return check(response, {
-        [`${context} status is 200`]: (r) => r.status === 200,
+        [context]: (r) => r.status === 200,
     });
 }
 
@@ -155,7 +155,7 @@ export function checkValidateResponse(response, context = 'validate') {
  */
 export function checkRegisterResponse(response, context = 'register') {
     return check(response, {
-        [`${context} status is 201 or 409`]: (r) => r.status === 201 || r.status === 409,
+        [context]: (r) => r.status === 201 || r.status === 409,
     });
 }
 

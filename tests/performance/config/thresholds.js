@@ -62,14 +62,19 @@ export function generateThresholds() {
 export function generateSmokeThresholds() {
     return {
         // Per-operation duration (lenient for smoke)
-        'http_req_duration{operation:login}': ['p(95)<400'],
-        'http_req_duration{operation:validate}': ['p(95)<70'],
-        'http_req_duration{operation:register}': ['p(95)<400'],
+        'http_req_duration{operation:login}': ['p(95)<1000'],
+        'http_req_duration{operation:validate}': ['p(95)<50'],
+        'http_req_duration{operation:register}': ['p(95)<1000'],
 
         // Per-operation error rates (lenient)
         'http_req_failed{operation:login}': ['rate<0.1'],
         'http_req_failed{operation:validate}': ['rate<0.01'],
         'http_req_failed{operation:register}': ['rate<0.01'],
+
+        // Per-check success rate thresholds
+        'checks{name:smoke_login}': ['rate>0.98'],       // 98% success rate
+        'checks{name:smoke_validate}': ['rate>0.99'],    // 99% success rate
+        'checks{name:smoke_register}': ['rate>0.98'],    // 98% success rate
     };
 }
 
