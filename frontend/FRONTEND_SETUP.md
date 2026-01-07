@@ -76,7 +76,7 @@ Before starting the frontend, ensure the backend is running:
 
 ```bash
 # From the repository root
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts:
@@ -88,7 +88,7 @@ This starts:
 
 Verify services are running:
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### 3. Install Dependencies
@@ -336,8 +336,8 @@ Error: Request failed with status code 0
 
 **Solution**: Ensure backend services are running:
 ```bash
-docker-compose up -d
-docker-compose ps  # Verify all services are running
+docker compose up -d
+docker compose ps  # Verify all services are running
 ```
 
 ### CORS Errors

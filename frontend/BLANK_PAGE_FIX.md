@@ -100,7 +100,7 @@ npm list react react-dom react-router
 
 ### Verify backend is running
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 All services should show "Up"

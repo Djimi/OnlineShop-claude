@@ -107,7 +107,7 @@ Check JaCoCo coverage for service: $ARGUMENTS
 ```markdown
 Check Docker environment status:
 
-1. Run docker-compose ps to show container status
+1. Run docker compose ps to show container status
 2. Check health of each service
 3. Report any unhealthy or stopped containers
 4. Show recent logs for any failing services
@@ -280,7 +280,7 @@ Add to root CLAUDE.md:
 When working with this project, these commands are pre-approved:
 - `./mvnw.cmd clean test` - Run tests
 - `./mvnw.cmd jacoco:report` - Generate coverage
-- `docker-compose ps` - Check services
+- `docker compose ps` - Check services
 - `git status/log/diff` - Git inspection
 
 ### Common Tasks

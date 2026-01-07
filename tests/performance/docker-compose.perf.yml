@@ -1,0 +1,104 @@
+# Docker Compose for Performance Testing
+#
+# This configuration spins up only the Auth service and its dependencies
+# for isolated performance testing.
+#
+# Usage:
+#   docker compose -f docker-compose.perf.yml up -d
+#   k6 run tests/performance/smoke.js
+#   docker compose -f docker-compose.perf.yml down
+
+services:
+  # ==================== AUTH DATABASE ====================
+  auth-postgres:
+    image: postgres:18-alpine
+    container_name: perf-auth-postgres
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: authpassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - perf-auth-postgres-data:/var/lib/postgresql/data
+      - ../../Auth/init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - perf-network
+    # Performance tuning for PostgreSQL
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c max_connections=200
+
+  # ==================== AUTH SERVICE ====================
+  auth-service:
+    build:
+      context: ../../Auth
+      dockerfile: Dockerfile
+    container_name: perf-auth-service
+    ports:
+      - "9001:9001"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-postgres:5432/auth
+      SPRING_DATASOURCE_USERNAME: auth
+      SPRING_DATASOURCE_PASSWORD: authpassword
+      # Performance tuning
+      JAVA_OPTS: >
+        -Xms512m
+        -Xmx512m
+        -XX:+UseZGC
+        -XX:+ZGenerational
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+    networks:
+      - perf-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/actuator/health/liveness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+
+  # ==================== K6 LOAD TESTING ====================
+  k6:
+    image: grafana/k6:latest
+    container_name: perf-k6
+    networks:
+      - perf-network
+    volumes:
+      - ./:/tests
+      - ./reports:/tests/reports
+      - ./baselines:/tests/baselines
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    environment:
+      - K6_OUT=json=/tests/reports/results.json
+    # Don't start automatically - run tests manually
+    profiles:
+      - tools
+    working_dir: /tests
+
+networks:
+  perf-network:
+    driver: bridge
+
+volumes:
+  perf-auth-postgres-data:

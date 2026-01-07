@@ -559,7 +559,7 @@ jobs:
 
       - name: Start Auth Service
         run: |
-          docker-compose up -d auth-service
+          docker compose up -d auth-service
           sleep 30
 
       - name: Run Smoke Tests
@@ -582,7 +582,7 @@ jobs:
 
       - name: Start Auth Service
         run: |
-          docker-compose up -d auth-service
+          docker compose up -d auth-service
           sleep 30
 
       - name: Run Load Tests

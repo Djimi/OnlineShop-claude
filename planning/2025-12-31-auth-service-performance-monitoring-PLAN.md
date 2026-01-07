@@ -659,7 +659,7 @@ groups:
 ### Docker Compose for Local Development
 
 ```yaml
-# docker-compose.observability.yml
+# docker compose.observability.yml
 version: '3.8'
 
 services:

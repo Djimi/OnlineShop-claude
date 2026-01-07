@@ -4,3 +4,4 @@
 .vscode/settings.json
 
 logs/
+tests/performance/reports/
