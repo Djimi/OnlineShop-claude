@@ -3,7 +3,7 @@
 -- Insert initial test user
 -- Username: testuser
 -- Password: testpass
--- BCrypt hash (cost factor 10): $2a$10$LU2Hu7aKH9lUPmGh7d3W0uPmKMOKqy4cAH1PV7UoqVzaI0mLQltJK
+-- Argon2id hash (OWASP 2025 recommended): $argon2id$v=19$m=47104,t=1,p=1$m8bxmEb2JmcMcYcThrTb+g$lkF3yBcV6NRa6fU8LStOzYm7JM+oI/jqO96KV8ggHok
 INSERT INTO users (username, normalized_username, password_hash)
-VALUES ('testuser', 'testuser', '$2a$15$F62WeSVx9CaeuMylgN52P.r0/o0awMFKt0x7V1Cu/AEFDz0Wxl/lO')
+VALUES ('testuser', 'testuser', '$argon2id$v=19$m=47104,t=1,p=1$enqtjCbSdr0S+U9Wdt59sA$xVrlmvOWjdRTtrTaMX9kZ1WBbKIp9VOiklDcVq3GdW4')
 ON CONFLICT (username) DO NOTHING;

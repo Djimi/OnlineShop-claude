@@ -75,6 +75,7 @@ export function setup() {
 export default function (data) {
     const { testUser } = data;
     const vuid = exec.vu.idInTest;
+    const iter = exec.vu.iterationInInstance;
 
     group('1. Login Flow', function () {
         const loginRes = login(BASE_URL, testUser.username, testUser.password);
@@ -84,9 +85,9 @@ export default function (data) {
         recordLoginMetrics(loginRes, loginSuccess, { vuid: vuid });
 
         if (loginSuccess) {
-            console.log(`[VU ${vuid}] Login successful (${loginRes.timings.duration.toFixed(0)}ms)`);
+            console.log(`[VU ${vuid}, Iter ${iter}] Login successful (${loginRes.timings.duration.toFixed(0)}ms)`);
         } else {
-            console.error(`[VU ${vuid}] Login failed: ${loginRes.status} - ${loginRes.body}`);
+            console.error(`[VU ${vuid}, Iter ${iter}] Login failed: ${loginRes.status} - ${loginRes.body}`);
         }
     });
 
@@ -103,12 +104,12 @@ export default function (data) {
             recordValidateMetrics(validateRes, validateSuccess, { vuid: vuid });
 
             if (validateSuccess) {
-                console.log(`[VU ${vuid}] Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
+                console.log(`[VU ${vuid}, Iter ${iter}] Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
             } else {
-                console.error(`[VU ${vuid}] Validate failed: ${validateRes.status}`);
+                console.error(`[VU ${vuid}, Iter ${iter}] Validate failed: ${validateRes.status}`);
             }
         } else {
-            console.error(`[VU ${vuid}] Could not get token for validate test`);
+            console.error(`[VU ${vuid}, Iter ${iter}] Could not get token for validate test`);
             // Record as a failed validation since we couldn't get a token
             recordValidateMetrics(
                 { timings: { duration: 0 }, status: 0 },
@@ -127,9 +128,9 @@ export default function (data) {
         recordRegisterMetrics(registerRes, registerSuccess, { vuid: vuid });
 
         if (registerSuccess) {
-            console.log(`[VU ${vuid}] Register successful (${registerRes.timings.duration.toFixed(0)}ms)`);
+            console.log(`[VU ${vuid}, Iter ${iter}] Register successful (${registerRes.timings.duration.toFixed(0)}ms)`);
         } else {
-            console.error(`[VU ${vuid}] Register failed: ${registerRes.status}`);
+            console.error(`[VU ${vuid}, Iter ${iter}] Register failed: ${registerRes.status}`);
         }
     });
 
