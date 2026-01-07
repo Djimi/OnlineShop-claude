@@ -29,7 +29,11 @@ export function login(baseUrl, username, password) {
     return http.post(
         `${baseUrl}/api/v1/auth/login`,
         payload,
-        { headers: JSON_HEADERS, tags: { operation: 'login' } }
+        {
+            headers: JSON_HEADERS,
+            tags: { operation: 'login' },
+            responseCallback: http.expectedStatuses(200),
+        }
     );
 }
 
@@ -50,7 +54,11 @@ export function register(baseUrl, username, password) {
     return http.post(
         `${baseUrl}/api/v1/auth/register`,
         payload,
-        { headers: JSON_HEADERS, tags: { operation: 'register' } }
+        {
+            headers: JSON_HEADERS,
+            tags: { operation: 'register' },
+            responseCallback: http.expectedStatuses(201, 409),
+        }
     );
 }
 
@@ -69,6 +77,7 @@ export function validateToken(baseUrl, token) {
                 'Authorization': `Bearer: ${token}`,
             },
             tags: { operation: 'validate' },
+            responseCallback: http.expectedStatuses(200),
         }
     );
 }
