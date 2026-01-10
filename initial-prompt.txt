@@ -1,0 +1,12 @@
+Start working on plan in "planning/2025-12-31-api-gateway-improvement-PLAN.md".
+
+Don't ask me for any permissions (as I am not watchin you actively).
+
+So I expect that you:
+- First create points in the plan file, so we can mark what is done (with green) and what is not in red.
+
+- For now do the work for all points up until 2.3 (including), so 2.4 and on will not be done for now.
+
+- check that everything is compiling, running, etc. Also verify this by building the project, docker image and run e2e tests
+
+- Create another file named "what-is-done.txt" and put what has been done with detailed explanation.

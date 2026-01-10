@@ -30,39 +30,39 @@ This plan improves the API Gateway service with better design patterns, testabil
 
 ### Phase 1: Code Improvements (Design Patterns & Abstraction)
 
-- [ ] **1.1 Extract interfaces for dependency injection**
+- ✅ **1.1 Extract interfaces for dependency injection**
   - Create `TokenValidator` interface
   - Create `AuthServiceClient` interface
   - Create `TokenCacheManager` interface
 
-- [ ] **1.2 Refactor AuthValidationService**
+- ✅ **1.2 Refactor AuthValidationService**
   - Inject RestTemplate via constructor (remove inline creation)
   - Split into smaller classes following SRP
   - Add circuit breaker with Resilience4j
 
-- [ ] **1.3 Refactor AuthenticationFilter**
+- ✅ **1.3 Refactor AuthenticationFilter**
   - Inject ObjectMapper instead of creating inline
   - Add token sanitization before processing
   - Add header injection protection
 
-- [ ] **1.4 Add new dependencies to pom.xml**
+- ✅ **1.4 Add new dependencies to pom.xml**
   - `spring-boot-starter-actuator` - Health checks & metrics
   - `resilience4j-spring-boot3` - Circuit breaker
   - `bucket4j-redis` - Rate limiting
   - `micrometer-registry-prometheus` - Metrics export
   - TestContainers dependencies for integration tests
 
-- [ ] **1.5 Add resilience configuration**
+- ✅ **1.5 Add resilience configuration**
   - Circuit breaker for Auth service (50% failure threshold)
   - Retry with exponential backoff (3 attempts)
   - Timeout limiter (3s)
 
-- [ ] **1.6 Add rate limiting**
+- ✅ **1.6 Add rate limiting**
   - Token bucket algorithm with Bucket4j + Redis
   - Tiers: Anonymous (60/min), Authenticated (300/min)
   - Return 429 Too Many Requests when exceeded
 
-- [ ] **1.7 Add metrics with Micrometer**
+- ✅ **1.7 Add metrics with Micrometer**
   - Cache hit/miss counters (L1, L2)
   - Auth service call latency histogram
   - Rate limit rejection counter
@@ -70,40 +70,40 @@ This plan improves the API Gateway service with better design patterns, testabil
 
 ### Phase 2: Corner Cases
 
-- [ ] **2.1 Token validation edge cases**
+- ✅ **2.1 Token validation edge cases**
   - Empty/whitespace token rejection
   - Token length validation (max 8KB)
   - Null byte detection
   - Token expiry buffer (30s grace period)
 
-- [ ] **2.2 Service unavailability**
+- ✅ **2.2 Service unavailability**
   - Return 503 instead of 401 when Auth service down
   - Return 504 on timeout
   - Return 502 on bad gateway
 
-- [ ] **2.3 Cache edge cases**
+- ✅ **2.3 Cache edge cases**
   - Handle Redis serialization errors gracefully
   - Add circuit breaker for Redis operations
   - Check `expiresAt` before returning cached tokens
 
-- [ ] **2.4 Security hardening**
+- ⚫ **2.4 Security hardening** (NOT IMPLEMENTED YET)
   - CRLF injection protection in headers
   - Sanitize username before adding to X-Username header
 
 ### Phase 3: Unit Testing
 
-- [ ] **3.1 Create test infrastructure**
+- ⚫ **3.1 Create test infrastructure** (NOT IMPLEMENTED YET)
   - `TestDataFactory` for test fixtures
   - `MockRequestBuilder` for HTTP request mocking
 
-- [ ] **3.2 AuthenticationFilterTest**
+- ⚫ **3.2 AuthenticationFilterTest** (NOT IMPLEMENTED YET)
   - Path filtering (OPTIONS, /auth/**, /items/**)
   - Authorization header validation
   - Token validation success/failure
   - Header enrichment (X-User-Id, X-Username)
   - Error response format (RFC 9457)
 
-- [ ] **3.3 AuthValidationServiceTest**
+- ⚫ **3.3 AuthValidationServiceTest** (NOT IMPLEMENTED YET)
   - L1 cache hit/miss scenarios
   - L2 cache hit/miss with promotion
   - Redis failure fallback
@@ -111,24 +111,24 @@ This plan improves the API Gateway service with better design patterns, testabil
   - Token hashing consistency
   - Cache TTL behavior
 
-- [ ] **3.4 DTO Tests**
+- ⚫ **3.4 DTO Tests** (NOT IMPLEMENTED YET)
   - ErrorResponse factory methods
   - ValidateResponse serialization
   - JSON format validation
 
 ### Phase 4: Integration Testing
 
-- [ ] **4.1 Setup TestContainers**
+- ⚫ **4.1 Setup TestContainers** (NOT IMPLEMENTED YET)
   - Redis container
   - MockServer for Auth service
   - Base integration test class
 
-- [ ] **4.2 Full flow tests**
+- ⚫ **4.2 Full flow tests** (NOT IMPLEMENTED YET)
   - Request -> Auth validation -> Cache -> Response
   - Cache promotion (L2 to L1)
   - Redis unavailability fallback
 
-- [ ] **4.3 Error scenario tests**
+- ⚫ **4.3 Error scenario tests** (NOT IMPLEMENTED YET)
   - Auth service down -> 503
   - Auth service timeout -> 504
   - Invalid token -> 401
