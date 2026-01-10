@@ -18,6 +18,8 @@ public interface ItemRepository {
 
     List<Item> findAll();
 
+    List<Item> searchByDescription(String searchTerm);
+
     void delete(Item item);
 
     boolean existsById(ItemId id);

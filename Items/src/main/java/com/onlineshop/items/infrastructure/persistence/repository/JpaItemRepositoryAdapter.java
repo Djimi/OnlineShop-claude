@@ -47,6 +47,13 @@ class JpaItemRepositoryAdapter implements ItemRepository {
     }
 
     @Override
+    public List<Item> searchByDescription(String searchTerm) {
+        return jpaRepository.searchByDescription(searchTerm).stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public void delete(Item item) {
         if (item.getId() != null) {
             jpaRepository.deleteById(item.getId().getValue());
