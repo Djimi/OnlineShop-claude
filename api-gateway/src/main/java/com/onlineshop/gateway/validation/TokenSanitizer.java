@@ -1,5 +1,6 @@
 package com.onlineshop.gateway.validation;
 
+import com.onlineshop.gateway.exception.InvalidTokenFormatException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -11,27 +12,26 @@ public class TokenSanitizer {
 
     /**
      * Validates and sanitizes a token.
+     * Throws InvalidTokenFormatException if the token format is invalid.
      *
      * @param token the token to validate
-     * @return true if token is valid, false otherwise
+     * @throws InvalidTokenFormatException if token is null, empty, too long, or contains invalid characters
      */
-    public boolean isValid(String token) {
+    public void validate(String token) {
         if (token == null || token.isBlank()) {
             log.debug("Token validation failed: token is null or empty");
-            return false;
+            throw new InvalidTokenFormatException("Token is null or empty");
         }
 
         if (token.length() > MAX_TOKEN_LENGTH) {
             log.warn("Token validation failed: token exceeds maximum length of {} bytes", MAX_TOKEN_LENGTH);
-            return false;
+            throw new InvalidTokenFormatException("Token exceeds maximum length of " + MAX_TOKEN_LENGTH + " bytes");
         }
 
         if (containsNullByte(token)) {
             log.warn("Token validation failed: token contains null bytes");
-            return false;
+            throw new InvalidTokenFormatException("Token contains null bytes");
         }
-
-        return true;
     }
 
     /**

@@ -33,19 +33,16 @@ public class AuthValidationService implements TokenValidator {
     /**
      * Validates a token using multi-layer caching:
      * L1 (Caffeine) -> L2 (Redis) -> Auth Service
+     *
+     * @throws InvalidTokenFormatException if token format is invalid
      */
     @Override
     public Optional<ValidateResponse> validateToken(String token) {
-        // Validate token format first
-        if (!tokenSanitizer.isValid(token)) {
-            log.debug("Token validation failed: invalid token format");
-            return Optional.empty();
-        }
-
-        String tokenHash = cacheManager.hashToken(token);
+        // Validate token format first - throws InvalidTokenFormatException if invalid
+        tokenSanitizer.validate(token);
 
         // Check cache first
-        Optional<ValidateResponse> cachedResponse = cacheManager.get(tokenHash);
+        Optional<ValidateResponse> cachedResponse = cacheManager.get(token);
         if (cachedResponse.isPresent()) {
             return cachedResponse;
         }
@@ -58,12 +55,12 @@ public class AuthValidationService implements TokenValidator {
 
             if (authResponse.isPresent()) {
                 // Cache valid response
-                cacheManager.put(tokenHash, authResponse.get());
+                cacheManager.put(token, authResponse.get());
                 return authResponse;
             } else {
                 // Cache invalid response briefly to prevent hammering Auth service
                 ValidateResponse invalidResponse = ValidateResponse.invalid();
-                cacheManager.put(tokenHash, invalidResponse);
+                cacheManager.put(token, invalidResponse);
                 return Optional.empty();
             }
         } finally {

@@ -6,30 +6,25 @@ import java.util.Optional;
 
 /**
  * Interface for managing token cache operations across L1 (Caffeine) and L2 (Redis) layers.
+ * The cache manager handles token hashing internally for secure storage.
  */
 public interface TokenCacheManager {
 
     /**
      * Gets a token from cache (checks L1 first, then L2).
+     * The token is hashed internally before lookup.
      *
-     * @param tokenHash the hashed token
+     * @param token the raw token
      * @return cached ValidateResponse if found, empty otherwise
      */
-    Optional<ValidateResponse> get(String tokenHash);
+    Optional<ValidateResponse> get(String token);
 
     /**
      * Stores a token in both L1 and L2 caches.
+     * The token is hashed internally before storage.
      *
-     * @param tokenHash the hashed token
+     * @param token the raw token
      * @param response the validation response to cache
      */
-    void put(String tokenHash, ValidateResponse response);
-
-    /**
-     * Hashes the token using SHA-256 for secure cache storage.
-     *
-     * @param token the plain token
-     * @return the hashed token
-     */
-    String hashToken(String token);
+    void put(String token, ValidateResponse response);
 }

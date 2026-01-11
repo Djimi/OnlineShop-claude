@@ -10,53 +10,66 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class GatewayMetrics {
 
-    private final Counter l1CacheHits;
-    private final Counter l1CacheMisses;
-    private final Counter l2CacheHits;
-    private final Counter l2CacheMisses;
-    private final Counter rateLimitRejections;
+    // Constants to avoid string typos
+    public static final String SERVICE_AUTH = "auth";
+    public static final String SERVICE_ITEMS = "items";
+    public static final String LAYER_L1 = "l1";
+    public static final String LAYER_L2 = "l2";
+    public static final String RESULT_HIT = "hit";
+    public static final String RESULT_MISS = "miss";
+
+    private final MeterRegistry meterRegistry;
     private final Timer authServiceLatency;
+    private final Counter rateLimitRejections;
 
     public GatewayMetrics(MeterRegistry meterRegistry) {
-        this.l1CacheHits = Counter.builder("gateway.cache.l1.hits")
-                .description("L1 (Caffeine) cache hits")
-                .register(meterRegistry);
+        this.meterRegistry = meterRegistry;
 
-        this.l1CacheMisses = Counter.builder("gateway.cache.l1.misses")
-                .description("L1 (Caffeine) cache misses")
-                .register(meterRegistry);
-
-        this.l2CacheHits = Counter.builder("gateway.cache.l2.hits")
-                .description("L2 (Redis) cache hits")
-                .register(meterRegistry);
-
-        this.l2CacheMisses = Counter.builder("gateway.cache.l2.misses")
-                .description("L2 (Redis) cache misses")
-                .register(meterRegistry);
-
-        this.rateLimitRejections = Counter.builder("gateway.ratelimit.rejections")
-                .description("Rate limit rejections")
-                .register(meterRegistry);
-
+        // Keep these as pre-registered (low cardinality, single instance)
         this.authServiceLatency = Timer.builder("gateway.auth.service.latency")
                 .description("Auth service call latency")
                 .register(meterRegistry);
+
+        this.rateLimitRejections = Counter.builder("gateway.ratelimit.rejections.total")
+                .description("Rate limit rejections")
+                .register(meterRegistry);
     }
 
-    public void incrementL1CacheHits() {
-        l1CacheHits.increment();
+    /**
+     * Record a cache operation result.
+     *
+     * @param layer "l1" (Caffeine) or "l2" (Redis)
+     * @param service "auth", "items", etc.
+     * @param result "hit" or "miss"
+     */
+    public void recordCacheOperation(String layer, String service, String result) {
+        Counter.builder("gateway.cache.operations.total")
+                .tag("layer", layer)
+                .tag("service", service)
+                .tag("result", result)
+                .description("Cache operation results")
+                .register(meterRegistry)
+                .increment();
     }
 
-    public void incrementL1CacheMisses() {
-        l1CacheMisses.increment();
+    /**
+     * Convenience method to record a cache hit.
+     *
+     * @param layer "l1" (Caffeine) or "l2" (Redis)
+     * @param service "auth", "items", etc.
+     */
+    public void recordCacheHit(String layer, String service) {
+        recordCacheOperation(layer, service, RESULT_HIT);
     }
 
-    public void incrementL2CacheHits() {
-        l2CacheHits.increment();
-    }
-
-    public void incrementL2CacheMisses() {
-        l2CacheMisses.increment();
+    /**
+     * Convenience method to record a cache miss.
+     *
+     * @param layer "l1" (Caffeine) or "l2" (Redis)
+     * @param service "auth", "items", etc.
+     */
+    public void recordCacheMiss(String layer, String service) {
+        recordCacheOperation(layer, service, RESULT_MISS);
     }
 
     public void incrementRateLimitRejections() {

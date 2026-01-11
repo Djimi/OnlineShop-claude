@@ -1,0 +1,59 @@
+Change I want to be made:
+
+-------------------------------
+I saw code like this:
+
+private final Function<String, Optional<ValidateResponse>> resilientValidator;
+
+    public AuthServiceProxy(...) {
+        // Create the reusable "Resilient Pipeline" once during initialization
+        this.resilientValidator = Decorators.ofFunction((String token) -> callAuthService(token))
+            .withThreadPoolBulkhead(threadPoolBulkhead) // Isolated threads
+            .withTimeLimiter(timeLimiter, scheduler)   // Timeout + Interruption
+            .withCircuitBreaker(circuitBreaker)        // Failure tracking
+            .withRetry(retry)                          // Auto-retry
+            .decorate();
+    }
+
+    @Override
+    public Optional<ValidateResponse> validateToken(String token) {
+        try {
+            // Simply call the pre-built pipeline
+            return resilientValidator.apply(token);
+        } catch (Exception e) {
+            return handleExceptions(e);
+        }
+    }
+
+
+I like how everything is configured and you jsut have one line in validateToken, so you don't create all retry, circuitbreaker, etc before the call.|
+
+I would like similar in the DefaultAuthserviceClient.java class
+Also start using bulhead in that service. I don't want to hammer auth service with huge amount of requests. For now just add maximum 5 paralel requests (do this change only here, don't touch toher places like caches, etc)
+Don't forget that we are using virtual threads and in thte bulkhead you MUST NOT pass system threads pool!
+
+
+----------------------------------------
+
+
+Auth service has change a bit - validate endpoint will not return valid: false json in case the token is not valid! Till now it throws exception, but it is not the case anymore!
+
+In case of missing authorization header it will return bad request(400).
+
+Handle these scenarios where needed in api-gateway service (do not touch or check auth service)
+
+
+---------------------------
+
+
+
+-------------------------------
+During the implmenetaiotn of the points above: 
+
+- Don't Add any tests!
+
+- Don't do any changes outside the project!
+
+- Don't run any testst!
+
+After you are done, just try to compile the project!

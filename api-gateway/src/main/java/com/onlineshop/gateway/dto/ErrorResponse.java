@@ -19,6 +19,16 @@ public class ErrorResponse {
     private String detail;
     private String instance;
 
+    public static ErrorResponse badRequest(String detail, String instance) {
+        return ErrorResponse.builder()
+                .type("https://api.onlineshop.com/errors/bad-request")
+                .title("Bad Request")
+                .status(400)
+                .detail(detail)
+                .instance(instance)
+                .build();
+    }
+
     public static ErrorResponse unauthorized(String detail, String instance) {
         return ErrorResponse.builder()
                 .type("https://api.onlineshop.com/errors/unauthorized")

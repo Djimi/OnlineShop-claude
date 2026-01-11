@@ -4,7 +4,6 @@ import com.onlineshop.auth.dto.*;
 import com.onlineshop.auth.entity.Session;
 import com.onlineshop.auth.entity.User;
 import com.onlineshop.auth.exception.InvalidUsernameOrPasswordException;
-import com.onlineshop.auth.exception.InvalidTokenException;
 import com.onlineshop.auth.exception.UserAlreadyExistsException;
 import com.onlineshop.auth.repository.SessionRepository;
 import com.onlineshop.auth.repository.UserRepository;
@@ -95,10 +94,12 @@ public class AuthService {
     public ValidateResponse validateToken(String token) {
         String tokenHash = hashToken(token);
         Session session = sessionRepository.findByTokenHash(tokenHash)
-                .orElseThrow(InvalidTokenException::new);
+                .orElse(null);
 
-        if (!session.isValid(clock.instant())) {
-            throw new InvalidTokenException();
+        if (session == null || !session.isValid(clock.instant())) {
+            return ValidateResponse.builder()
+                    .valid(false)
+                    .build();
         }
 
         User user = session.getUser();

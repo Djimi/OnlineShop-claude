@@ -52,12 +52,14 @@ public class DefaultTokenCacheManager implements TokenCacheManager {
     }
 
     @Override
-    public Optional<ValidateResponse> get(String tokenHash) {
+    public Optional<ValidateResponse> get(String token) {
+        String tokenHash = hashToken(token);
+
         // L1: Check Caffeine cache first (nanosecond access)
         ValidateResponse cachedResponse = caffeineCache.getIfPresent(tokenHash);
         if (cachedResponse != null) {
             log.debug("Token validation hit L1 cache (Caffeine)");
-            metrics.incrementL1CacheHits();
+            metrics.recordCacheHit(GatewayMetrics.LAYER_L1, GatewayMetrics.SERVICE_AUTH);
             // Check expiry before returning
             if (isExpired(cachedResponse)) {
                 log.debug("L1 cached token expired, evicting");
@@ -66,7 +68,7 @@ public class DefaultTokenCacheManager implements TokenCacheManager {
             }
             return cachedResponse.isValid() ? Optional.of(cachedResponse) : Optional.empty();
         }
-        metrics.incrementL1CacheMisses();
+        metrics.recordCacheMiss(GatewayMetrics.LAYER_L1, GatewayMetrics.SERVICE_AUTH);
 
         // L2: Check Redis cache (millisecond access, shared across instances)
         try {
@@ -76,7 +78,7 @@ public class DefaultTokenCacheManager implements TokenCacheManager {
 
             if (redisResponse != null) {
                 log.debug("Token validation hit L2 cache (Redis)");
-                metrics.incrementL2CacheHits();
+                metrics.recordCacheHit(GatewayMetrics.LAYER_L2, GatewayMetrics.SERVICE_AUTH);
                 // Check expiry before returning
                 if (isExpired(redisResponse)) {
                     log.debug("L2 cached token expired, evicting");
@@ -93,17 +95,19 @@ public class DefaultTokenCacheManager implements TokenCacheManager {
                 caffeineCache.put(tokenHash, redisResponse);
                 return redisResponse.isValid() ? Optional.of(redisResponse) : Optional.empty();
             }
-            metrics.incrementL2CacheMisses();
+            metrics.recordCacheMiss(GatewayMetrics.LAYER_L2, GatewayMetrics.SERVICE_AUTH);
         } catch (Exception e) {
             log.warn("Redis cache lookup failed, continuing without cache: {}", e.getMessage());
-            metrics.incrementL2CacheMisses();
+            metrics.recordCacheMiss(GatewayMetrics.LAYER_L2, GatewayMetrics.SERVICE_AUTH);
         }
 
         return Optional.empty();
     }
 
     @Override
-    public void put(String tokenHash, ValidateResponse response) {
+    public void put(String token, ValidateResponse response) {
+        String tokenHash = hashToken(token);
+
         // Store in L1 cache
         caffeineCache.put(tokenHash, response);
 
@@ -121,8 +125,14 @@ public class DefaultTokenCacheManager implements TokenCacheManager {
         }
     }
 
-    @Override
-    public String hashToken(String token) {
+    /**
+     * Hashes the token using SHA-256 for secure cache storage.
+     * This is an internal implementation detail.
+     *
+     * @param token the raw token
+     * @return the hashed token
+     */
+    private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));

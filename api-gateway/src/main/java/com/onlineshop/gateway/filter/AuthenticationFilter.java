@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.onlineshop.gateway.dto.ErrorResponse;
 import com.onlineshop.gateway.dto.ValidateResponse;
 import com.onlineshop.gateway.exception.GatewayTimeoutException;
+import com.onlineshop.gateway.exception.InvalidTokenFormatException;
 import com.onlineshop.gateway.exception.ServiceUnavailableException;
 import com.onlineshop.gateway.service.AuthValidationService;
 import com.onlineshop.gateway.validation.TokenSanitizer;
@@ -100,6 +101,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(wrappedRequest, response);
 
+        } catch (InvalidTokenFormatException e) {
+            log.warn("Invalid token format: {}", e.getMessage());
+            sendBadRequestResponse(response, e.getMessage(), path);
         } catch (ServiceUnavailableException e) {
             log.error("Auth service unavailable: {}", e.getMessage());
             sendServiceUnavailableResponse(response, "Authentication service is temporarily unavailable", path);
@@ -110,6 +114,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             log.error("Unexpected error during authentication: {}", e.getMessage(), e);
             sendBadGatewayResponse(response, "An unexpected error occurred during authentication", path);
         }
+    }
+
+    private void sendBadRequestResponse(HttpServletResponse response, String detail, String path)
+            throws IOException {
+        ErrorResponse errorResponse = ErrorResponse.badRequest(detail, path);
+
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 
     private void sendUnauthorizedResponse(HttpServletResponse response, String detail, String path)

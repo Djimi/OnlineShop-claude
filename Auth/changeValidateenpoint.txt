@@ -1,0 +1,16 @@
+ I want to change that logic "        if (!session.isValid(clock.instant())) {
+              throw new InvalidTokenException();
+          }
+  " in validateToken in AuthService class. I don't want to throw exception in that case. The idea is the following - when we validate the token we should return 200 in case the token is
+  valid or not! In case of valid the response will as is, in case of not valid token we will just return valid field set to false!
+
+  In case of missing auhtorization header we should return 400 - bad request (with our error response)
+
+  In case of empty authorization header, invalid token format, etc we should return 401
+
+  Change all places where needed - Auth Service, Controller advices, tests, integraiton tests, etc.
+
+After compilation, tests passed, you can assume everything is fine.
+
+
+You MUST NOT change files outside AUTH PROJECT folder!

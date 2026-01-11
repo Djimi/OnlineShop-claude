@@ -1,15 +1,44 @@
 NEXT:
 
+To create decorator and to not chaing each time all timers, circtuitbreaker, etc:
+
+public class AuthServiceProxy implements AuthService {
+    
+    private final Function<String, Optional<ValidateResponse>> resilientValidator;
+
+    public AuthServiceProxy(...) {
+        // Create the reusable "Resilient Pipeline" once during initialization
+        this.resilientValidator = Decorators.ofFunction((String token) -> callAuthService(token))
+            .withThreadPoolBulkhead(threadPoolBulkhead) // Isolated threads
+            .withTimeLimiter(timeLimiter, scheduler)   // Timeout + Interruption
+            .withCircuitBreaker(circuitBreaker)        // Failure tracking
+            .withRetry(retry)                          // Auto-retry
+            .decorate();
+    }
+
+    @Override
+    public Optional<ValidateResponse> validateToken(String token) {
+        try {
+            // Simply call the pre-built pipeline
+            return resilientValidator.apply(token);
+        } catch (Exception e) {
+            return handleExceptions(e);
+        }
+    }
+}
+
+----------------
 
 
-- Improve the perf tests - what is printed, whether we should split login/register/validate metrics, etc
-- Check reports of perf tests
+- To test the time limiter
+- to add bulkhead 
+- GatewayMetrics - what else could be added
 - Check hibernate requests executed
 - Check why register threshold is so much higher than login
 - Read about actuator (Gemini)
 - Change liveness checks for the services
 
-
+- Check CORS through the whole flow
 
 
 
