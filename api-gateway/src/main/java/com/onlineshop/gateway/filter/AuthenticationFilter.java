@@ -21,7 +21,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -78,14 +82,12 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(BEARER_PREFIX.length());
 
         try {
-            Optional<ValidateResponse> validationResult = authValidationService.validateToken(token);
+            ValidateResponse validateResponse = authValidationService.validateToken(token);
 
-            if (validationResult.isEmpty()) {
+            if (validateResponse == null) {
                 sendUnauthorizedResponse(response, "Invalid or expired token", path);
                 return;
             }
-
-            ValidateResponse validateResponse = validationResult.get();
 
             // Sanitize username before adding to headers
             String sanitizedUsername = tokenSanitizer.sanitizeUsername(validateResponse.getUsername());

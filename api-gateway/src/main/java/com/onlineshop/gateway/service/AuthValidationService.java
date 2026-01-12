@@ -8,7 +8,7 @@ import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.Optional; // Still needed for cache.get() return type
 
 @Service
 @Slf4j
@@ -37,31 +37,31 @@ public class AuthValidationService implements TokenValidator {
      * @throws InvalidTokenFormatException if token format is invalid
      */
     @Override
-    public Optional<ValidateResponse> validateToken(String token) {
+    public ValidateResponse validateToken(String token) {
         // Validate token format first - throws InvalidTokenFormatException if invalid
         tokenSanitizer.validate(token);
 
         // Check cache first
         Optional<ValidateResponse> cachedResponse = cacheManager.get(token);
         if (cachedResponse.isPresent()) {
-            return cachedResponse;
+            return cachedResponse.get();
         }
 
         // Cache miss - call Auth service
         log.debug("Token validation cache miss, calling Auth service");
         Timer.Sample sample = metrics.startAuthServiceTimer();
         try {
-            Optional<ValidateResponse> authResponse = authServiceClient.validateToken(token);
+            ValidateResponse authResponse = authServiceClient.validateToken(token);
 
-            if (authResponse.isPresent()) {
+            if (authResponse != null) {
                 // Cache valid response
-                cacheManager.put(token, authResponse.get());
+                cacheManager.put(token, authResponse);
                 return authResponse;
             } else {
                 // Cache invalid response briefly to prevent hammering Auth service
                 ValidateResponse invalidResponse = ValidateResponse.invalid();
                 cacheManager.put(token, invalidResponse);
-                return Optional.empty();
+                return null;
             }
         } finally {
             metrics.stopAuthServiceTimer(sample);

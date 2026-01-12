@@ -86,7 +86,7 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
 //    }
 
     @Override
-    public Optional<ValidateResponse> validateToken(String token) {
+    public ValidateResponse validateToken(String token) {
         try {
             // 1. Core Logic
             Supplier<ValidateResponse> baseSupplier = () -> callAuthService(token);
@@ -105,7 +105,7 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
             // 5. Retry (Outermost)
             Callable<ValidateResponse> retryable = Retry.decorateCallable(retry, circuitBreaker);
 
-            return Optional.ofNullable(retryable.call());
+            return retryable.call();
         } catch (CallNotPermittedException e) {
             // Circuit breaker is open - auth service has too many failures
             log.warn("Circuit breaker is open for auth service: {}", e.getMessage());
