@@ -130,24 +130,16 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
     }
 
     private ValidateResponse callAuthService(String token) {
-        try {
             // Use RestClient fluent API
-            ValidateResponse response = restClient.get()
-                    .uri(authServiceUrl + validateEndpoint)
-                    .header("Authorization", "Bearer: " + token)
-                    .retrieve()
-                    .body(ValidateResponse.class);
+        ValidateResponse response = restClient.get()
+                .uri(authServiceUrl + validateEndpoint)
+                .header("Authorization", "Bearer: " + token)
+                .retrieve()
+                .body(ValidateResponse.class);
 
-            // Auth service now only returns valid responses (no more valid:false)
-            // If we get here, the token is valid
-            return response;
+        // Auth service now only returns valid responses (no more valid:false)
+        // If we get here, the token is valid
+        return response;
 
-        } catch (HttpClientErrorException e) {
-            // 4xx errors (400 Bad Request, 401/403 Unauthorized) = invalid token
-            // Return null to indicate invalid token
-            log.debug("Token validation failed with 4xx error: {}", e.getMessage());
-            return null;
-        }
-        // All other exceptions (5xx, connection errors, timeouts, parsing errors) propagate to resilience4j
     }
 }
