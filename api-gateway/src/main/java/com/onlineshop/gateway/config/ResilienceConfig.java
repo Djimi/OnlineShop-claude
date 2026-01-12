@@ -6,6 +6,7 @@ import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.client.RestClient;
 
 import io.github.resilience4j.bulkhead.Bulkhead;
@@ -20,8 +21,10 @@ import io.github.resilience4j.retry.RetryRegistry;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
+@Slf4j
 public class ResilienceConfig {
 
     /**
@@ -58,10 +61,21 @@ public class ResilienceConfig {
                 .failureRateThreshold(50)
                 .waitDurationInOpenState(Duration.ofSeconds(30))
                 .permittedNumberOfCallsInHalfOpenState(3)
+                // Ignore parsing errors - they're not service failures, just bad responses
+                // Don't trigger circuit breaker or count towards failure rate
+                .ignoreExceptions(HttpMessageNotReadableException.class)
                 .build();
 
         CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(config);
-        return registry.circuitBreaker("authService");
+        CircuitBreaker circuitBreaker = registry.circuitBreaker("authService");
+
+        // Log parsing errors at warn level for monitoring
+        circuitBreaker.getEventPublisher()
+                .onIgnoredError(event -> log.warn(
+                        "Auth service returned unparseable response: {}",
+                        event.getThrowable().getMessage()));
+
+        return circuitBreaker;
     }
 
     @Bean
@@ -69,6 +83,8 @@ public class ResilienceConfig {
         RetryConfig config = RetryConfig.custom()
                 .maxAttempts(3)
                 .waitDuration(Duration.ofMillis(500))
+                // Don't retry on parsing errors - they won't succeed on retry
+                .ignoreExceptions(HttpMessageNotReadableException.class)
                 .build();
 
         RetryRegistry registry = RetryRegistry.of(config);
