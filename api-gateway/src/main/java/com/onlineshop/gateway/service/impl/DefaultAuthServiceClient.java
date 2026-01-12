@@ -1,10 +1,13 @@
 package com.onlineshop.gateway.service.impl;
 
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+import io.github.resilience4j.bulkhead.Bulkhead;
+import io.github.resilience4j.decorators.Decorators;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
@@ -32,40 +35,76 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
     private final Retry retry;
     private final TimeLimiter timeLimiter;
 
+    private final Bulkhead bulkhead;
+
+    private final ExecutorService executor;
+
     public DefaultAuthServiceClient(
             RestClient restClient,
             @Value("${gateway.auth.service-url}") String authServiceUrl,
             @Value("${gateway.auth.validate-endpoint}") String validateEndpoint,
             CircuitBreaker circuitBreaker,
             Retry retry,
-            TimeLimiter timeLimiter) {
+            TimeLimiter timeLimiter,
+            Bulkhead bulkhead,
+            ExecutorService executor) {
         this.restClient = restClient;
         this.authServiceUrl = authServiceUrl;
         this.validateEndpoint = validateEndpoint;
         this.circuitBreaker = circuitBreaker;
         this.retry = retry;
         this.timeLimiter = timeLimiter;
+        this.bulkhead = bulkhead;
+        this.executor = executor;
+        };
+
+//    @PostConstruct
+    public void setupLogging() {
+        // 1. Bulkhead Events
+        bulkhead.getEventPublisher()
+                .onCallPermitted(event -> log.info("Bulkhead: Call permitted"))
+                .onCallRejected(event -> log.warn("Bulkhead: Call rejected!"));
+
+        // 2. TimeLimiter Events
+        timeLimiter.getEventPublisher()
+                .onSuccess(event -> log.info("TimeLimiter: Finished on time"))
+                .onTimeout(event -> log.error("TimeLimiter: Timed out!"));
+
+        // 3. Circuit Breaker Events
+        this.circuitBreaker.getEventPublisher()
+                .onSuccess(event -> log.info("CircuitBreaker: Success"))
+                .onError(event -> log.error("CircuitBreaker: Recorded an error"))
+                .onStateTransition(event -> log.info("CircuitBreaker: State changed to {}", event.getStateTransition()));
+
+        // 4. Retry Events
+        retry.getEventPublisher()
+                .onRetry(event -> log.warn("Retry: Attempt number {}", event.getNumberOfRetryAttempts()))
+                .onSuccess(event -> log.info("Retry: Succeeded after retry"))
+                .onError(event -> log.error("Retry: Failed after all attempts"));
     }
 
     @Override
     public Optional<ValidateResponse> validateToken(String token) {
         try {
-            Callable<Optional<ValidateResponse>> callable = () -> callAuthService(token);
 
-            // Decorate with retry, circuit breaker, and time limiter
-            callable = Retry.decorateCallable(retry, callable);
-            callable = CircuitBreaker.decorateCallable(circuitBreaker, callable);
-            callable = TimeLimiter.decorateFutureSupplier(timeLimiter,
-                    () -> CompletableFuture.supplyAsync(() -> {
-                        try {
-                            return callAuthService(token);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }));
+            // 1. Core Logic
+            Supplier<Optional<ValidateResponse>> baseSupplier = () -> callAuthService(token);
 
-            return callable.call();
+            // 2. Bulkhead (Innermost - Semaphore based for Virtual Threads)
+            Supplier<Optional<ValidateResponse>> bulkheaded = Bulkhead.decorateSupplier(bulkhead, baseSupplier);
 
+            // 3. TimeLimiter (Executing on Virtual Threads)
+            Callable<Optional<ValidateResponse>> timeLimited = TimeLimiter.decorateFutureSupplier(timeLimiter,
+                                                                                                  () -> CompletableFuture.supplyAsync(bulkheaded,
+                                                                                                                                      executor));
+
+            // 4. Circuit Breaker (Middle)
+            Callable<Optional<ValidateResponse>> circuitBreaker = CircuitBreaker.decorateCallable(this.circuitBreaker, timeLimited);
+
+            // 5. Retry (Outermost)
+            Callable<Optional<ValidateResponse>> retryable = Retry.decorateCallable(retry, circuitBreaker);
+
+            return retryable.call();
         } catch (TimeoutException e) {
             log.error("Auth service call timed out: {}", e.getMessage());
             throw new GatewayTimeoutException("Auth service request timed out", e);
@@ -77,7 +116,7 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
 
     private Optional<ValidateResponse> callAuthService(String token) {
         try {
-            // Use RestClient fluent API
+//             Use RestClient fluent API
             ValidateResponse response = restClient.get()
                     .uri(authServiceUrl + validateEndpoint)
                     .header("Authorization", "Bearer: " + token)

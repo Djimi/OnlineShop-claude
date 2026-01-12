@@ -33,7 +33,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private final TokenSanitizer tokenSanitizer;
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer: ";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     public AuthenticationFilter(
             AuthValidationService authValidationService,
@@ -63,7 +63,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
 
         // Only authenticate /items/** requests
-        if (!path.startsWith("/items")) {
+        if (!path.startsWith("/api/v1/items")) {
             filterChain.doFilter(request, response);
             return;
         }

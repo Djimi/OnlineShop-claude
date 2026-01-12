@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
+import io.github.resilience4j.bulkhead.Bulkhead;
+import io.github.resilience4j.bulkhead.BulkheadConfig;
+import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -80,5 +83,46 @@ public class ResilienceConfig {
 
         TimeLimiterRegistry registry = TimeLimiterRegistry.of(config);
         return registry.timeLimiter("authService");
+    }
+
+    /**
+     * Configures Bulkhead pattern for Auth Service.
+     *
+     * The Bulkhead pattern limits the number of concurrent calls to prevent
+     * resource exhaustion and cascading failures. This implementation uses
+     * a semaphore-based approach which is optimal for virtual threads.
+     *
+     * Configuration Details:
+     * - maxConcurrentCalls: 10 - Maximum concurrent calls allowed (prevents overwhelming target service)
+     * - maxWaitDuration: 5 seconds - Maximum time to wait for a permit (prevents indefinite blocking)
+     * - writableStackTraceEnabled: true - Captures stack traces for better debugging
+     *
+     * For Auth Service, we use a conservative limit (10 concurrent) because:
+     * 1. Each auth validation call performs expensive token verification
+     * 2. Auth service is a critical dependency (circuit breaker helps here too)
+     * 3. Virtual threads handle waiting gracefully without thread pool overhead
+     */
+    @Bean
+    public Bulkhead authServiceBulkhead() {
+        BulkheadConfig config = BulkheadConfig.custom()
+                // Maximum number of concurrent calls allowed
+                // This prevents overwhelming the auth service with too many simultaneous requests
+                // With virtual threads, we can safely allow more concurrent calls compared to platform threads
+                .maxConcurrentCalls(200)
+
+                // Maximum duration to wait for a permit to execute
+                // If a permit isn't available within this time, BulkheadFullException is thrown
+                // Set to 5 seconds to align with our HTTP timeouts and allow graceful backpressure
+                .maxWaitDuration(Duration.ofSeconds(5))
+
+                // Enable detailed stack traces in exceptions
+                // Useful for debugging when bulkhead is exhausted (BulkheadFullException)
+                // Helps identify which part of the code triggered the bulkhead rejection
+                .writableStackTraceEnabled(true)
+
+                .build();
+
+        BulkheadRegistry registry = BulkheadRegistry.of(config);
+        return registry.bulkhead("authService");
     }
 }

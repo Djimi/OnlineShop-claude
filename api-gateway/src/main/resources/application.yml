@@ -38,7 +38,7 @@ spring:
       port: 6379
       timeout: 100ms
 
-# Resilience4j Circuit Breaker Configuration
+# Resilience4j Configuration (Circuit Breaker, Retry, TimeLimiter, Bulkhead)
 resilience4j:
   circuitbreaker:
     instances:
@@ -56,6 +56,15 @@ resilience4j:
     instances:
       authService:
         timeout-duration: 3s
+  bulkhead:
+    instances:
+      authService:
+        # Maximum number of concurrent calls allowed to prevent overwhelming the auth service
+        max-concurrent-calls: 10
+        # Maximum time to wait for a permit before throwing BulkheadFullException
+        max-wait-duration: 5s
+        # Enable stack traces in exceptions for better debugging
+        writable-stack-trace-enabled: true
 
 # Actuator & Metrics
 management:
