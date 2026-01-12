@@ -84,7 +84,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         try {
             ValidateResponse validateResponse = authValidationService.validateToken(token);
 
-            if (validateResponse == null) {
+            if (!validateResponse.isValid()) {
                 sendUnauthorizedResponse(response, "Invalid or expired token", path);
                 return;
             }

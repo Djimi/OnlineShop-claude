@@ -2,6 +2,7 @@ package com.onlineshop.gateway.service;
 
 import com.onlineshop.gateway.cache.TokenCacheManager;
 import com.onlineshop.gateway.dto.ValidateResponse;
+import com.onlineshop.gateway.exception.InvalidTokenFormatException;
 import com.onlineshop.gateway.metrics.GatewayMetrics;
 import com.onlineshop.gateway.validation.TokenSanitizer;
 import io.micrometer.core.instrument.Timer;
@@ -53,16 +54,9 @@ public class AuthValidationService implements TokenValidator {
         try {
             ValidateResponse authResponse = authServiceClient.validateToken(token);
 
-            if (authResponse != null) {
-                // Cache valid response
-                cacheManager.put(token, authResponse);
-                return authResponse;
-            } else {
-                // Cache invalid response briefly to prevent hammering Auth service
-                ValidateResponse invalidResponse = ValidateResponse.invalid();
-                cacheManager.put(token, invalidResponse);
-                return null;
-            }
+            // Cache valid response
+            cacheManager.put(token, authResponse);
+            return authResponse;
         } finally {
             metrics.stopAuthServiceTimer(sample);
         }
