@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class DefaultTokenCacheManager implements TokenCacheManager {
+public class DefaultTokenCacheManagerManualImpl implements TokenCacheManager {
 
     private final Cache<String, ValidateResponse> caffeineCache;
     private final RedisTemplate<String, ValidateResponse> redisTemplate;
@@ -30,7 +30,7 @@ public class DefaultTokenCacheManager implements TokenCacheManager {
 
     private static final String REDIS_KEY_PREFIX = "token:";
 
-    public DefaultTokenCacheManager(
+    public DefaultTokenCacheManagerManualImpl(
             Cache<String, ValidateResponse> caffeineCache,
             RedisTemplate<String, ValidateResponse> redisTemplate,
             GatewayMetrics metrics,

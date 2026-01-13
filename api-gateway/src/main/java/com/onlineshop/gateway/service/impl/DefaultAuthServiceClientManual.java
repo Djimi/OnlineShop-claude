@@ -1,22 +1,17 @@
 package com.onlineshop.gateway.service.impl;
 
-import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
-import io.github.resilience4j.decorators.Decorators;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.timelimiter.TimeLimiter;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import com.onlineshop.gateway.dto.ValidateResponse;
@@ -28,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class DefaultAuthServiceClient implements AuthServiceClient {
+public class DefaultAuthServiceClientManual implements AuthServiceClient {
 
     private final RestClient restClient;
     private final String authServiceUrl;
@@ -41,7 +36,7 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
 
     private final ExecutorService executor;
 
-    public DefaultAuthServiceClient(
+    public DefaultAuthServiceClientManual(
             RestClient restClient,
             @Value("${gateway.auth.service-url}") String authServiceUrl,
             @Value("${gateway.auth.validate-endpoint}") String validateEndpoint,
