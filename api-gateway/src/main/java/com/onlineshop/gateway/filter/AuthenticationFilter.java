@@ -6,7 +6,7 @@ import com.onlineshop.gateway.dto.ValidateResponse;
 import com.onlineshop.gateway.exception.GatewayTimeoutException;
 import com.onlineshop.gateway.exception.InvalidTokenFormatException;
 import com.onlineshop.gateway.exception.ServiceUnavailableException;
-import com.onlineshop.gateway.service.AuthValidationService;
+import com.onlineshop.gateway.service.AuthValidationServiceManual;
 import com.onlineshop.gateway.validation.TokenSanitizer;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,7 +32,7 @@ import java.util.Set;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class AuthenticationFilter extends OncePerRequestFilter {
 
-    private final AuthValidationService authValidationService;
+    private final AuthValidationServiceManual authValidationServiceManual;
     private final ObjectMapper objectMapper;
     private final TokenSanitizer tokenSanitizer;
 
@@ -40,10 +40,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     public AuthenticationFilter(
-            AuthValidationService authValidationService,
+            AuthValidationServiceManual authValidationServiceManual,
             ObjectMapper objectMapper,
             TokenSanitizer tokenSanitizer) {
-        this.authValidationService = authValidationService;
+        this.authValidationServiceManual = authValidationServiceManual;
         this.objectMapper = objectMapper;
         this.tokenSanitizer = tokenSanitizer;
     }
@@ -82,7 +82,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(BEARER_PREFIX.length());
 
         try {
-            ValidateResponse validateResponse = authValidationService.validateToken(token);
+            ValidateResponse validateResponse = authValidationServiceManual.validateToken(token);
 
             if (!validateResponse.isValid()) {
                 sendUnauthorizedResponse(response, "Invalid or expired token", path);

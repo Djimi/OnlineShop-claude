@@ -13,14 +13,14 @@ import java.util.Optional; // Still needed for cache.get() return type
 
 @Service
 @Slf4j
-public class AuthValidationService implements TokenValidator {
+public class AuthValidationServiceManual implements TokenValidator {
 
     private final TokenCacheManager cacheManager;
     private final AuthServiceClient authServiceClient;
     private final TokenSanitizer tokenSanitizer;
     private final GatewayMetrics metrics;
 
-    public AuthValidationService(
+    public AuthValidationServiceManual(
             TokenCacheManager cacheManager,
             AuthServiceClient authServiceClient,
             TokenSanitizer tokenSanitizer,
