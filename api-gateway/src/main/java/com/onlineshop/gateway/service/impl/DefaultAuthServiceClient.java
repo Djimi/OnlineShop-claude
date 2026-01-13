@@ -2,16 +2,20 @@ package com.onlineshop.gateway.service.impl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeoutException;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
-import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import com.onlineshop.gateway.dto.ValidateResponse;
+import com.onlineshop.gateway.exception.GatewayTimeoutException;
+import com.onlineshop.gateway.exception.ServiceUnavailableException;
 import com.onlineshop.gateway.service.AuthServiceClient;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +41,9 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
     }
 
     @Override
-    @TimeLimiter(name = "authService")
-    @CircuitBreaker(name = "authService")
-    @Bulkhead(name = "authService")
+    @TimeLimiter(name = "authService", fallbackMethod = "timeoutFallback")
+    @CircuitBreaker(name = "authService", fallbackMethod = "circuitBreakerFallback")
+    @Bulkhead(name = "authService", fallbackMethod = "bulkheadFallback")
     public CompletableFuture<ValidateResponse> validateToken(String token) {
         return CompletableFuture.supplyAsync(
             () -> callAuthService(token),
@@ -56,5 +60,26 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
                 .body(ValidateResponse.class);
 
         return response;
+    }
+
+    private CompletableFuture<ValidateResponse> circuitBreakerFallback(
+            String token, CallNotPermittedException ex) {
+        log.warn("Circuit breaker open for auth service: {}", ex.getMessage());
+        return CompletableFuture.failedFuture(
+            new ServiceUnavailableException("Auth service circuit breaker is open", ex));
+    }
+
+    private CompletableFuture<ValidateResponse> bulkheadFallback(
+            String token, BulkheadFullException ex) {
+        log.warn("Bulkhead full for auth service: {}", ex.getMessage());
+        return CompletableFuture.failedFuture(
+            new ServiceUnavailableException("Auth service is overloaded", ex));
+    }
+
+    private CompletableFuture<ValidateResponse> timeoutFallback(
+            String token, TimeoutException ex) {
+        log.error("Auth service timed out: {}", ex.getMessage());
+        return CompletableFuture.failedFuture(
+            new GatewayTimeoutException("Auth service request timed out", ex));
     }
 }
