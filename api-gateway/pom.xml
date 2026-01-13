@@ -51,6 +51,11 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+        </dependency>
+
         <!-- Resilience4j for circuit breaker, retry, and rate limiter -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>

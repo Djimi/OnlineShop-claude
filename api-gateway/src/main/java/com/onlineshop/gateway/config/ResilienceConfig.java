@@ -57,7 +57,7 @@ public class ResilienceConfig {
     @Bean
     public CircuitBreaker authServiceCircuitBreaker() {
         CircuitBreakerConfig config = CircuitBreakerConfig.custom()
-                .slidingWindowSize(10)
+                .slidingWindowSize(3)
                 .failureRateThreshold(50)
                 .waitDurationInOpenState(Duration.ofSeconds(30))
                 .permittedNumberOfCallsInHalfOpenState(3)

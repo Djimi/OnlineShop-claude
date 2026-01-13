@@ -21,7 +21,13 @@ import com.onlineshop.gateway.service.AuthServiceClient;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Service
+/**
+ * @deprecated Use {@link DefaultAuthServiceClient} instead.
+ * This class uses manual Resilience4j decoration and is kept for reference only.
+ * The new implementation uses Spring annotations for cleaner, more maintainable code.
+ */
+@Deprecated(since = "1.0.0", forRemoval = true)
+//@Service
 @Slf4j
 public class DefaultAuthServiceClientManual implements AuthServiceClient {
 
@@ -81,47 +87,50 @@ public class DefaultAuthServiceClientManual implements AuthServiceClient {
 //    }
 
     @Override
-    public ValidateResponse validateToken(String token) {
-        try {
-            // 1. Core Logic
-            Supplier<ValidateResponse> baseSupplier = () -> callAuthService(token);
+    @Deprecated(since = "1.0.0", forRemoval = true)
+    public CompletableFuture<ValidateResponse> validateToken(String token) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // 1. Core Logic
+                Supplier<ValidateResponse> baseSupplier = () -> callAuthService(token);
 
-            // 2. Bulkhead (Innermost - Semaphore based for Virtual Threads)
-            Supplier<ValidateResponse> bulkheaded = Bulkhead.decorateSupplier(bulkhead, baseSupplier);
+                // 2. Bulkhead (Innermost - Semaphore based for Virtual Threads)
+                Supplier<ValidateResponse> bulkheaded = Bulkhead.decorateSupplier(bulkhead, baseSupplier);
 
-            // 3. TimeLimiter (Executing on Virtual Threads)
-            Callable<ValidateResponse> timeLimited = TimeLimiter.decorateFutureSupplier(timeLimiter,
-                                                                                        () -> CompletableFuture.supplyAsync(bulkheaded,
-                                                                                                                            executor));
+                // 3. TimeLimiter (Executing on Virtual Threads)
+                Callable<ValidateResponse> timeLimited = TimeLimiter.decorateFutureSupplier(timeLimiter,
+                                                                                            () -> CompletableFuture.supplyAsync(bulkheaded,
+                                                                                                                                executor));
 
-            // 4. Circuit Breaker (Middle)
-            Callable<ValidateResponse> circuitBreaker = CircuitBreaker.decorateCallable(this.circuitBreaker, timeLimited);
+                // 4. Circuit Breaker (Middle)
+                Callable<ValidateResponse> circuitBreaker = CircuitBreaker.decorateCallable(this.circuitBreaker, timeLimited);
 
-            // 5. Retry (Outermost)
-            Callable<ValidateResponse> retryable = Retry.decorateCallable(retry, circuitBreaker);
+                // 5. Retry (Outermost)
+                Callable<ValidateResponse> retryable = Retry.decorateCallable(retry, circuitBreaker);
 
-            return retryable.call();
-        } catch (CallNotPermittedException e) {
-            // Circuit breaker is open - auth service has too many failures
-            log.warn("Circuit breaker is open for auth service: {}", e.getMessage());
-            throw new ServiceUnavailableException("Auth service circuit breaker is open", e);
-        } catch (BulkheadFullException e) {
-            // Bulkhead is exhausted - too many concurrent requests
-            log.warn("Bulkhead is exhausted for auth service: {}", e.getMessage());
-            throw new ServiceUnavailableException("Auth service is overloaded", e);
-        } catch (TimeoutException e) {
-            // TimeLimiter timeout - request took too long
-            log.error("Auth service call timed out: {}", e.getMessage());
-            throw new GatewayTimeoutException("Auth service request timed out", e);
-        } catch (HttpMessageNotReadableException e) {
-            // Parsing error - auth service returned invalid JSON/response format
-            log.warn("Auth service returned unparseable response: {}", e.getMessage());
-            throw new ServiceUnavailableException("Auth service returned invalid response format", e);
-        } catch (Exception e) {
-            // Any other exceptions from REST client or resilience4j
-            log.error("Failed to validate token with Auth service: {}", e.getMessage());
-            throw new ServiceUnavailableException("Auth service is unavailable", e);
-        }
+                return retryable.call();
+            } catch (CallNotPermittedException e) {
+                // Circuit breaker is open - auth service has too many failures
+                log.warn("Circuit breaker is open for auth service: {}", e.getMessage());
+                throw new ServiceUnavailableException("Auth service circuit breaker is open", e);
+            } catch (BulkheadFullException e) {
+                // Bulkhead is exhausted - too many concurrent requests
+                log.warn("Bulkhead is exhausted for auth service: {}", e.getMessage());
+                throw new ServiceUnavailableException("Auth service is overloaded", e);
+            } catch (TimeoutException e) {
+                // TimeLimiter timeout - request took too long
+                log.error("Auth service call timed out: {}", e.getMessage());
+                throw new GatewayTimeoutException("Auth service request timed out", e);
+            } catch (HttpMessageNotReadableException e) {
+                // Parsing error - auth service returned invalid JSON/response format
+                log.warn("Auth service returned unparseable response: {}", e.getMessage());
+                throw new ServiceUnavailableException("Auth service returned invalid response format", e);
+            } catch (Exception e) {
+                // Any other exceptions from REST client or resilience4j
+                log.error("Failed to validate token with Auth service: {}", e.getMessage());
+                throw new ServiceUnavailableException("Auth service is unavailable", e);
+            }
+        });
     }
 
     private ValidateResponse callAuthService(String token) {

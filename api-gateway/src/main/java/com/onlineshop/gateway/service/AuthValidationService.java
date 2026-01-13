@@ -52,7 +52,7 @@ public class AuthValidationService implements TokenValidator {
         log.debug("Token validation cache miss, calling Auth service");
         Timer.Sample sample = metrics.startAuthServiceTimer();
         try {
-            ValidateResponse authResponse = authServiceClient.validateToken(token);
+            ValidateResponse authResponse = authServiceClient.validateToken(token).join();
 
             // Cache valid response
             cacheManager.put(token, authResponse);

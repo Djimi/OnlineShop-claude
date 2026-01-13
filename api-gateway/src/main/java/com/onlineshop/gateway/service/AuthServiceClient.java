@@ -1,6 +1,7 @@
 package com.onlineshop.gateway.service;
 
 import com.onlineshop.gateway.dto.ValidateResponse;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Interface for communication with the Auth Service.
@@ -12,7 +13,7 @@ public interface AuthServiceClient {
      * Validates a token by calling the Auth Service.
      *
      * @param token the authentication token to validate
-     * @return ValidateResponse if token is valid, null if invalid or error
+     * @return CompletableFuture containing ValidateResponse if token is valid, or exception if invalid/error
      */
-    ValidateResponse validateToken(String token);
+    CompletableFuture<ValidateResponse> validateToken(String token);
 }
