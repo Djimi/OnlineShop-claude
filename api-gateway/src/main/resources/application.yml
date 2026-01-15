@@ -71,3 +71,5 @@ gateway:
     authenticated:
       requests-per-minute: 300
       burst: 50
+
+debug: true

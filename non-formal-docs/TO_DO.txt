@@ -1,12 +1,17 @@
 NEXT:
 
 
+- To fix 403 error on register
+- To fix login with testuser and testpass
+- to play with api-gateway
+- to check bucket4j
+- to check how we make the component start if Redis is down and to retry connecting after
 - To check how to put invalida tokens, but for smaller amount of time than the others
 - GatewayMetrics - what else could be added
 - Check hibernate requests executed
 - Check why register threshold is so much higher than login
 - Read about actuator (Gemini)
-- Change liveness checks for the services
+- Change liveness cdhecks for the services
 - check Spring integration with docker compose (to start needed containers on app start)
 - Check CORS through the whole flow
 

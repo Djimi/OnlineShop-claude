@@ -67,7 +67,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         }
 
         // Only authenticate /items/** requests
-        if (!path.startsWith("/api/v1/items")) {
+        if (!path.startsWith("/items")) {
             filterChain.doFilter(request, response);
             return;
         }
