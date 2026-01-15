@@ -1,140 +1,78 @@
 package com.onlineshop.gateway.service;
 
-import com.github.benmanes.caffeine.cache.Cache;
 import com.onlineshop.gateway.dto.ValidateResponse;
+import com.onlineshop.gateway.metrics.GatewayMetrics;
+import com.onlineshop.gateway.validation.TokenSanitizer;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
-import java.util.Optional;
-
+/**
+ * Token validation service using Spring Cache Abstraction.
+ * Uses a TieredCacheManager for multi-layer caching (L1: Caffeine, L2: Redis).
+ *
+ * <p>The caching is handled declaratively via {@code @Cacheable} annotation.
+ * Spring automatically:</p>
+ * <ul>
+ *   <li>Checks the cache before method execution</li>
+ *   <li>Returns cached value if found (method never executes)</li>
+ *   <li>Calls the method on cache miss and stores the result</li>
+ * </ul>
+ *
+ * <p>The cache key is the SHA-256 hash of the token to avoid storing raw tokens.</p>
+ */
 @Service
 @Slf4j
-public class AuthValidationService {
+public class AuthValidationService implements TokenValidator {
 
-    private final Cache<String, ValidateResponse> caffeineCache;
-    private final RedisTemplate<String, ValidateResponse> redisTemplate;
-    private final RestTemplate restTemplate;
-    private final String authServiceUrl;
-    private final String validateEndpoint;
-    private final long redisTtlSeconds;
-
-    private static final String REDIS_KEY_PREFIX = "token:";
+    private final AuthServiceClient authServiceClient;
+    private final TokenSanitizer tokenSanitizer;
+    private final GatewayMetrics metrics;
 
     public AuthValidationService(
-            Cache<String, ValidateResponse> caffeineCache,
-            RedisTemplate<String, ValidateResponse> redisTemplate,
-            @Value("${gateway.auth.service-url}") String authServiceUrl,
-            @Value("${gateway.auth.validate-endpoint}") String validateEndpoint,
-            @Value("${gateway.cache.redis.ttl-seconds:300}") long redisTtlSeconds) {
-        this.caffeineCache = caffeineCache;
-        this.redisTemplate = redisTemplate;
-        this.restTemplate = new RestTemplate();
-        this.authServiceUrl = authServiceUrl;
-        this.validateEndpoint = validateEndpoint;
-        this.redisTtlSeconds = redisTtlSeconds;
+            AuthServiceClient authServiceClient,
+            TokenSanitizer tokenSanitizer,
+            GatewayMetrics metrics) {
+        this.authServiceClient = authServiceClient;
+        this.tokenSanitizer = tokenSanitizer;
+        this.metrics = metrics;
     }
 
     /**
-     * Validates a token using multi-layer caching:
-     * L1 (Caffeine) -> L2 (Redis) -> Auth Service
+     * Validates a token using multi-layer caching via Spring Cache Abstraction.
+     *
+     * <p>Cache flow:</p>
+     * <ol>
+     *   <li>Check L1 (Caffeine) - nanosecond access</li>
+     *   <li>Check L2 (Redis) - millisecond access, with L1 promotion on hit</li>
+     *   <li>Call Auth Service on cache miss, store result in both caches</li>
+     * </ol>
+     *
+     * @param token the authentication token to validate
+     * @return ValidateResponse containing user information if valid
+     * @throws com.onlineshop.gateway.exception.InvalidTokenFormatException if token format is invalid
+     * @throws com.onlineshop.gateway.exception.ServiceUnavailableException if Auth service is unavailable
      */
-    public Optional<ValidateResponse> validateToken(String token) {
-        String tokenHash = hashToken(token);
+    @Override
+    @Cacheable(
+            cacheNames = "auth-tokens",
+            key = "T(com.onlineshop.gateway.util.TokenHasher).hash(#token)",
+            unless = "#result == null || !#result.valid"
+    )
+    public ValidateResponse validateToken(String token) {
+        // Validate token format first - throws InvalidTokenFormatException if invalid
+        tokenSanitizer.validate(token);
 
-        // L1: Check Caffeine cache first (nanosecond access)
-        ValidateResponse cachedResponse = caffeineCache.getIfPresent(tokenHash);
-        if (cachedResponse != null) {
-            log.debug("Token validation hit L1 cache (Caffeine)");
-            return cachedResponse.isValid() ? Optional.of(cachedResponse) : Optional.empty();
-        }
-
-        // L2: Check Redis cache (millisecond access, shared across instances)
-        try {
-            ValidateResponse redisResponse = redisTemplate.opsForValue().get(REDIS_KEY_PREFIX + tokenHash);
-            if (redisResponse != null) {
-                log.debug("Token validation hit L2 cache (Redis)");
-                // Promote to L1 cache
-                caffeineCache.put(tokenHash, redisResponse);
-                return redisResponse.isValid() ? Optional.of(redisResponse) : Optional.empty();
-            }
-        } catch (Exception e) {
-            log.warn("Redis cache lookup failed, falling back to Auth service: {}", e.getMessage());
-        }
-
-        // L3: Call Auth service
+        // This code only runs on cache miss
         log.debug("Token validation cache miss, calling Auth service");
-        return callAuthService(token, tokenHash);
-    }
-
-    private Optional<ValidateResponse> callAuthService(String token, String tokenHash) {
+        Timer.Sample sample = metrics.startAuthServiceTimer();
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Bearer: " + token);
-
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<ValidateResponse> response = restTemplate.exchange(
-                    authServiceUrl + validateEndpoint,
-                    HttpMethod.GET,
-                    entity,
-                    ValidateResponse.class
-            );
-
-            ValidateResponse validateResponse = response.getBody();
-            if (validateResponse != null && validateResponse.isValid()) {
-                // Store in both caches
-                caffeineCache.put(tokenHash, validateResponse);
-                try {
-                    redisTemplate.opsForValue().set(
-                            REDIS_KEY_PREFIX + tokenHash,
-                            validateResponse,
-                            Duration.ofSeconds(redisTtlSeconds)
-                    );
-                } catch (Exception e) {
-                    log.warn("Failed to store token in Redis cache: {}", e.getMessage());
-                }
-                return Optional.of(validateResponse);
-            }
-
-            // Cache invalid response briefly to prevent hammering Auth service
-            ValidateResponse invalidResponse = ValidateResponse.invalid();
-            caffeineCache.put(tokenHash, invalidResponse);
-
-            return Optional.empty();
-
-        } catch (RestClientException e) {
-            log.error("Failed to validate token with Auth service: {}", e.getMessage());
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Hashes the token using SHA-256 for secure cache storage.
-     * Never store plain tokens in cache.
-     */
-    private String hashToken(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
+            ValidateResponse authResponse = authServiceClient.validateToken(token).join();
+            log.debug("Auth service response received, valid={}", authResponse.isValid());
+            return authResponse;
+        } finally {
+            metrics.stopAuthServiceTimer(sample);
         }
     }
 }

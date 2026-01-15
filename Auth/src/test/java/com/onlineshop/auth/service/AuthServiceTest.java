@@ -7,7 +7,6 @@ import com.onlineshop.auth.dto.RegisterResponse;
 import com.onlineshop.auth.dto.ValidateResponse;
 import com.onlineshop.auth.entity.Session;
 import com.onlineshop.auth.entity.User;
-import com.onlineshop.auth.exception.InvalidTokenException;
 import com.onlineshop.auth.exception.InvalidUsernameOrPasswordException;
 import com.onlineshop.auth.exception.UserAlreadyExistsException;
 import com.onlineshop.auth.repository.SessionRepository;
@@ -184,18 +183,23 @@ class AuthServiceTest {
     }
 
     @Test
-    void validateToken_whenTokenNotFound_throwsInvalidTokenException() {
+    void validateToken_whenTokenNotFound_returnsInvalidResponse() {
         String token = "invalidtoken";
         String tokenHash = hashToken(token);
 
         when(sessionRepository.findByTokenHash(tokenHash)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.validateToken(token))
-                .isInstanceOf(InvalidTokenException.class);
+        ValidateResponse response = authService.validateToken(token);
+
+        assertThat(response.isValid()).isFalse();
+        assertThat(response.getUserId()).isNull();
+        assertThat(response.getUsername()).isNull();
+        assertThat(response.getCreatedAt()).isNull();
+        assertThat(response.getExpiresAt()).isNull();
     }
 
     @Test
-    void validateToken_whenSessionExpired_throwsInvalidTokenException() {
+    void validateToken_whenSessionExpired_returnsInvalidResponse() {
         String token = "expiredtoken";
         String tokenHash = hashToken(token);
         User user = createUser(1L, "testuser", "encodedPassword");
@@ -205,12 +209,17 @@ class AuthServiceTest {
 
         when(sessionRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> authService.validateToken(token))
-                .isInstanceOf(InvalidTokenException.class);
+        ValidateResponse response = authService.validateToken(token);
+
+        assertThat(response.isValid()).isFalse();
+        assertThat(response.getUserId()).isNull();
+        assertThat(response.getUsername()).isNull();
+        assertThat(response.getCreatedAt()).isNull();
+        assertThat(response.getExpiresAt()).isNull();
     }
 
     @Test
-    void validateToken_whenCurrentTimeBeforeCreatedAt_throwsInvalidTokenException() {
+    void validateToken_whenCurrentTimeBeforeCreatedAt_returnsInvalidResponse() {
         String token = "futuretoken";
         String tokenHash = hashToken(token);
         User user = createUser(1L, "testuser", "encodedPassword");
@@ -220,8 +229,13 @@ class AuthServiceTest {
 
         when(sessionRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> authService.validateToken(token))
-                .isInstanceOf(InvalidTokenException.class);
+        ValidateResponse response = authService.validateToken(token);
+
+        assertThat(response.isValid()).isFalse();
+        assertThat(response.getUserId()).isNull();
+        assertThat(response.getUsername()).isNull();
+        assertThat(response.getCreatedAt()).isNull();
+        assertThat(response.getExpiresAt()).isNull();
     }
 
     // ==================== Helper methods ====================

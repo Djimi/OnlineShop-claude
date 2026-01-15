@@ -94,7 +94,7 @@ class EndpointsParametersIT extends BaseIntegrationTest {
 
     @ParameterizedTest(name = "Validate: {0}")
     @MethodSource("invalidValidateHeadersProvider")
-    void validate_withInvalidAuthHeader_returnsUnauthorized(
+    void validate_withInvalidAuthHeader_returnsExpectedError(
             String testName,
             String authHeader,
             HttpStatus expectedStatus) throws Exception {
@@ -169,13 +169,12 @@ class EndpointsParametersIT extends BaseIntegrationTest {
 
     private static Stream<Arguments> invalidValidateHeadersProvider() {
         return Stream.of(
-                arguments("missing Authorization header", null, HttpStatus.UNAUTHORIZED),
+                arguments("missing Authorization header", null, HttpStatus.BAD_REQUEST),
                 arguments("empty Authorization header", "", HttpStatus.UNAUTHORIZED),
                 arguments("invalid format - no Bearer prefix", "some-token", HttpStatus.UNAUTHORIZED),
                 arguments("invalid format - Bearer without colon", "Bearer token123", HttpStatus.UNAUTHORIZED),
                 arguments("empty token after Bearer:", "Bearer: ", HttpStatus.UNAUTHORIZED),
-                arguments("blank token after Bearer:", "Bearer:    ", HttpStatus.UNAUTHORIZED),
-                arguments("invalid token", "Bearer: invalid-token-12345", HttpStatus.UNAUTHORIZED)
+                arguments("blank token after Bearer:", "Bearer:    ", HttpStatus.UNAUTHORIZED)
         );
     }
 

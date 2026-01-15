@@ -191,27 +191,25 @@ class ComponentIT extends BaseIntegrationTest {
         assertErrorResponse(
                 errorResponse,
                 HttpStatus.UNAUTHORIZED,
-                "https://api.onlineshop.com/errors/invalid-token",
+                "https://api.onlineshop.com/errors/invalid-token-format",
                 "Unauthorized",
                 VALIDATE_PATH
         );
     }
 
     @Test
-    void validate_withInvalidRandomToken_returnsUnauthorized() throws Exception {
+    void validate_withInvalidRandomToken_returnsValidFalse() throws Exception {
         log.info("Testing token validation with invalid random token");
 
         // A properly formatted but non-existent/invalid token
         String randomToken = "abc123-invalid-random-token-xyz789";
-        ErrorResponse errorResponse = validateTokenExpectingError("Bearer: " + randomToken);
+        ValidateResponse response = validateToken(randomToken);
 
-        assertErrorResponse(
-                errorResponse,
-                HttpStatus.UNAUTHORIZED,
-                "https://api.onlineshop.com/errors/invalid-token",
-                "Unauthorized",
-                VALIDATE_PATH
-        );
+        assertThat(response.isValid()).isFalse();
+        assertThat(response.getUserId()).isNull();
+        assertThat(response.getUsername()).isNull();
+        assertThat(response.getCreatedAt()).isNull();
+        assertThat(response.getExpiresAt()).isNull();
     }
 
     // ==================== Username Uniqueness Tests ====================

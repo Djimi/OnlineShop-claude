@@ -115,12 +115,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidTokenException(
-            InvalidTokenException ex,
+    @ExceptionHandler(InvalidTokenFormatException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTokenFormatException(
+            InvalidTokenFormatException ex,
             WebRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .type("https://api.onlineshop.com/errors/invalid-token")
+                .type("https://api.onlineshop.com/errors/invalid-token-format")
                 .title("Unauthorized")
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .detail(ex.getMessage())
@@ -130,25 +130,40 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler(MissingAuthorizationHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingAuthorizationHeaderException(
+            MissingAuthorizationHeaderException ex,
+            WebRequest request) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("https://api.onlineshop.com/errors/missing-authorization-header")
+                .title("Bad Request")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .detail(ex.getMessage())
+                .instance(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(
             MissingRequestHeaderException ex,
             WebRequest request) {
         String headerName = ex.getHeaderName();
 
-        // For Authorization header, return 401 Unauthorized
+        // For Authorization header, return 400 Bad Request
         if ("Authorization".equalsIgnoreCase(headerName)) {
             logger.warn("Missing Authorization header on {}", request.getDescription(false));
 
             ErrorResponse errorResponse = ErrorResponse.builder()
-                    .type("https://api.onlineshop.com/errors/missing-authorization")
-                    .title("Unauthorized")
-                    .status(HttpStatus.UNAUTHORIZED.value())
+                    .type("https://api.onlineshop.com/errors/missing-authorization-header")
+                    .title("Bad Request")
+                    .status(HttpStatus.BAD_REQUEST.value())
                     .detail("Authorization header is required.")
                     .instance(request.getDescription(false).replace("uri=", ""))
                     .build();
 
-            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         }
 
         // For other headers, return 400 Bad Request

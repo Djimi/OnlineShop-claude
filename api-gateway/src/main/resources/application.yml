@@ -38,6 +38,19 @@ spring:
       port: 6379
       timeout: 100ms
 
+# Actuator & Metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: api-gateway
+
 # Custom gateway configuration
 gateway:
   auth:
@@ -51,3 +64,12 @@ gateway:
       max-size: 10000
     redis:
       ttl-seconds: 300
+  ratelimit:
+    anonymous:
+      requests-per-minute: 60
+      burst: 10
+    authenticated:
+      requests-per-minute: 300
+      burst: 50
+
+debug: true

@@ -96,6 +96,7 @@ See [docs/GIT_WORKFLOW.md](./docs/GIT_WORKFLOW.md) for:
 See [docs/API_DESIGN.md](./docs/API_DESIGN.md) for:
 - API versioning and request/response format
 - Error handling (RFC 9457 Problem Details)
+- Observability and metrics standards (tag-based dimensional metrics)
 - Logging standards
 
 <!-- ## Style Guides
