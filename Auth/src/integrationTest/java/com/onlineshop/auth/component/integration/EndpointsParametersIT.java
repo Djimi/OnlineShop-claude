@@ -172,9 +172,9 @@ class EndpointsParametersIT extends BaseIntegrationTest {
                 arguments("missing Authorization header", null, HttpStatus.BAD_REQUEST),
                 arguments("empty Authorization header", "", HttpStatus.UNAUTHORIZED),
                 arguments("invalid format - no Bearer prefix", "some-token", HttpStatus.UNAUTHORIZED),
-                arguments("invalid format - Bearer without colon", "Bearer token123", HttpStatus.UNAUTHORIZED),
-                arguments("empty token after Bearer:", "Bearer: ", HttpStatus.UNAUTHORIZED),
-                arguments("blank token after Bearer:", "Bearer:    ", HttpStatus.UNAUTHORIZED)
+                arguments("invalid format - Bearer with colon (non-standard)", "Bearer: token123", HttpStatus.UNAUTHORIZED),
+                arguments("empty token after Bearer", "Bearer ", HttpStatus.UNAUTHORIZED),
+                arguments("blank token after Bearer", "Bearer    ", HttpStatus.UNAUTHORIZED)
         );
     }
 

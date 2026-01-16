@@ -55,7 +55,7 @@ public class DefaultAuthServiceClient implements AuthServiceClient {
         // Use RestClient fluent API
         ValidateResponse response = restClient.get()
                 .uri(authServiceUrl + validateEndpoint)
-                .header("Authorization", "Bearer: " + token)
+                .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .body(ValidateResponse.class);
 

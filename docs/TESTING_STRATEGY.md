@@ -10,9 +10,10 @@
 
 ## Philosophy
 
-We follow **Test-Driven Development (TDD)** when writing new code when writing new code: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.
+[//]: # (We follow **Test-Driven Development &#40;TDD&#41;** when writing new code when writing new code: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.)
 
-Tests provide confidence to refactor, deploy, and evolve the system. We optimize for **fast feedback loops**: unit tests run in milliseconds, integration tests in seconds, E2E tests in minutes. The testing pyramid reflects this—many fast tests at the bottom, few slow tests at the top.
+[//]: # ()
+[//]: # (Tests provide confidence to refactor, deploy, and evolve the system. We optimize for **fast feedback loops**: unit tests run in milliseconds, integration tests in seconds, E2E tests in minutes. The testing pyramid reflects this—many fast tests at the bottom, few slow tests at the top.)
 
 ## Testing Pyramid
 
@@ -108,14 +109,16 @@ Resist the urge to write production code without a failing test first. The disci
 
 ### Running Tests
 
+> **Important:** If you are not in the service folder, navigate to it first.
+
 ```bash
 # Unit + Integration (per service), should be run from the respective service folder
-./mvnw.cmd clean test
+./mvnw clean test
 
 # E2E (from e2e-tests/, requires docker compose up before or docker)
-./mvnw.cmd clean test
+./mvnw clean test
 
 # With coverage report
-./mvnw.cmd clean test jacoco:report
+./mvnw clean test jacoco:report
 # Report at: target/site/jacoco/index.html
 ```

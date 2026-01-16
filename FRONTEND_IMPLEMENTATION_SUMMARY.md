@@ -229,9 +229,9 @@ http://localhost:5173
 
 ### Token Format
 ```
-Authorization: Bearer: <token>
+Authorization: Bearer <token>
 ```
-Note the colon after "Bearer" - specific to your API!
+Standard OAuth 2.0 Bearer token format (RFC 6750).
 
 ---
 

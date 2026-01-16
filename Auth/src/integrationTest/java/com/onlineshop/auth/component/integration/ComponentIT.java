@@ -272,7 +272,7 @@ class ComponentIT extends BaseIntegrationTest {
         log.info("Validating token");
         var result = restTestClient.get()
                 .uri(VALIDATE_PATH)
-                .header("Authorization", "Bearer: " + token)
+                .header("Authorization", "Bearer " + token)
                 .exchange()
                 .expectStatus().isOk()
                 .returnResult(String.class);
