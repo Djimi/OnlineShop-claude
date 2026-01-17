@@ -34,7 +34,7 @@ Change the `/api/v1/auth/validate` endpoint behavior:
 |----------|------------------|--------------|
 | Missing Authorization header | 401 Unauthorized | **400 Bad Request** |
 | Empty Authorization header | 401 Unauthorized | **401 Unauthorized** |
-| Invalid token format (no "Bearer: " prefix) | 401 Unauthorized | **401 Unauthorized** |
+| Invalid token format (no "Bearer" prefix) | 401 Unauthorized | **401 Unauthorized** |
 | Token not found in database | 401 Unauthorized | **200 OK** with `valid: false` |
 | Token expired | 401 Unauthorized | **200 OK** with `valid: false` |
 | Valid token | 200 OK with user data | **200 OK** with user data |
@@ -98,8 +98,8 @@ Use the same DTO for both - valid and invalid tokens (just skip nulls in case of
 
 - [ ] **Task 2.2:** Update `AuthController.extractToken()` method
   - [ ] Add check for empty Authorization header → throw `InvalidTokenFormatException`
-  - [ ] Keep check for missing "Bearer: " prefix → throw `InvalidTokenFormatException`
-  - [ ] Add check for empty token after "Bearer: " → throw `InvalidTokenFormatException`
+  - [ ] Keep check for missing "Bearer" prefix → throw `InvalidTokenFormatException`
+  - [ ] Add check for empty token after "Bearer" → throw `InvalidTokenFormatException`
   - **File:** `Auth/src/main/java/com/onlineshop/auth/controller/AuthController.java`
 
 - [ ] **Task 2.3:** Update `AuthController.validate()` method
@@ -200,9 +200,9 @@ Use the same DTO for both - valid and invalid tokens (just skip nulls in case of
   - [ ] Assert error response with type `https://api.onlineshop.com/errors/invalid-token-format`
   - **File:** `Auth/src/integrationTest/java/com/onlineshop/auth/component/integration/ComponentIT.java` (new test)
 
-- [ ] **Task 6.3:** Add test for blank token after "Bearer: " returns 401
+- [ ] **Task 6.3:** Add test for blank token after "Bearer" returns 401
   - [ ] Create `validate_withBlankTokenAfterBearer_returnsUnauthorized()` test
-  - [ ] Call validate endpoint with "Bearer:    " (spaces only)
+  - [ ] Call validate endpoint with "Bearer   " (spaces only)
   - [ ] Assert 401 Unauthorized status
   - [ ] Assert error response with type `https://api.onlineshop.com/errors/invalid-token-format`
   - **File:** `Auth/src/integrationTest/java/com/onlineshop/auth/component/integration/ComponentIT.java` (new test)
@@ -210,7 +210,7 @@ Use the same DTO for both - valid and invalid tokens (just skip nulls in case of
 - [ ] **Task 6.4:** Add test for token not in database returns 200 with valid=false
   - [ ] Create `validate_withNonExistentToken_returnsValidFalse()` test
   - [ ] Generate a valid-format token that doesn't exist in DB
-  - [ ] Call validate endpoint with "Bearer: " + token
+  - [ ] Call validate endpoint with "Bearer" + token
   - [ ] Assert 200 OK status
   - [ ] Assert response: `valid: false`, all other fields null
   - **File:** `Auth/src/integrationTest/java/com/onlineshop/auth/component/integration/ComponentIT.java` (new test)
@@ -335,7 +335,7 @@ Use the same DTO for both - valid and invalid tokens (just skip nulls in case of
 ### New Integration Tests Coverage
 - Missing Authorization header → 400
 - Empty Authorization header → 401
-- Blank token after "Bearer: " → 401
+- Blank token after "Bearer" → 401
 - Non-existent token in DB → 200 with valid=false
 - Future session (invalid time) → 200 with valid=false
 - Valid token → 200 with valid=true and full data

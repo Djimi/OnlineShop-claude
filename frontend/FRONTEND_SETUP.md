@@ -183,11 +183,10 @@ http://localhost:5173
 
 ### Token Format
 
-The API uses Bearer token authentication:
+The API uses standard OAuth 2.0 Bearer token authentication (RFC 6750):
 ```
-Authorization: Bearer: <token>
+Authorization: Bearer <token>
 ```
-Note the colon after "Bearer" - this is specific to your API.
 
 ## API Integration
 

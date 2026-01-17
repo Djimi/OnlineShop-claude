@@ -68,7 +68,7 @@ class ItemsE2ETest extends BaseTest {
         // Step 3: Get all items using the token
         Response allItemsResponse = given()
                 .spec(requestSpec)
-                .header("Authorization", "Bearer: " + token)
+                .header("Authorization", "Bearer " +token)
                 .when()
                 .get("/items")
                 .then()
@@ -87,7 +87,7 @@ class ItemsE2ETest extends BaseTest {
 
             given()
                     .spec(requestSpec)
-                    .header("Authorization", "Bearer: " + token)
+                    .header("Authorization", "Bearer " +token)
                     .when()
                     .get("/items/" + firstItemId)
                     .then()
@@ -116,7 +116,7 @@ class ItemsE2ETest extends BaseTest {
 
         given()
                 .spec(requestSpec)
-                .header("Authorization", "Bearer: " + fakeToken)
+                .header("Authorization", "Bearer " +fakeToken)
                 .when()
                 .get("/items")
                 .then()

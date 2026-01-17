@@ -1,0 +1,295 @@
+================================================================================
+                    SPRING CLOUD GATEWAY FEATURES EXPLORATION
+                              Summary of Implementation
+================================================================================
+
+Date: 2026-01-15
+Project: api-gateway
+
+================================================================================
+                              FILES CREATED
+================================================================================
+
+1. RequestLoggingFilter.java
+   Location: src/main/java/com/onlineshop/gateway/filter/
+
+   Features:
+   - Request/response timing with Micrometer metrics
+   - Configurable header/payload logging
+   - Sensitive data masking (passwords, tokens, API keys)
+   - Slow request detection and alerting
+   - Client IP extraction (X-Forwarded-For support)
+   - Structured logging with request IDs
+
+2. BodyModificationConfig.java
+   Location: src/main/java/com/onlineshop/gateway/config/
+
+   Features:
+   - Metadata header injection routes
+   - Audit header injection routes
+   - Staging/preview environment routing
+   - API info endpoint with JSON response
+   - Deprecated endpoint handling (410 Gone)
+   - API versioning demonstration
+
+================================================================================
+                              FILES MODIFIED
+================================================================================
+
+1. GatewayConfig.java
+   Location: src/main/java/com/onlineshop/gateway/config/
+
+   Enhanced with 20+ routes demonstrating:
+   - Request/response header manipulation (add, set, remove, map, dedupe)
+   - Security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, etc.)
+   - Request validation (body size limits, header size limits)
+   - Path manipulation (prefix, strip, rewrite, set)
+   - Query parameter manipulation (add, remove)
+   - Advanced predicates (weight, header, query, cookie, time-based)
+   - Redirects (301 Moved Permanently, 302 Found)
+   - Custom fallback responses (404 with RFC 9457 format)
+
+2. application.yml
+   Location: src/main/resources/
+
+   New configuration sections:
+   - Request validation limits (max-size, max-header-size)
+   - Logging settings (enabled, include-headers, include-payload, slow-threshold)
+   - Security headers configuration
+   - Canary/A/B routing settings
+   - Metrics distribution (percentiles, histograms, SLOs)
+   - Response compression settings
+
+3. CLAUDE.md
+   Location: api-gateway/
+
+   Updated documentation with all new features, routes, and configuration.
+
+================================================================================
+                    SPRING CLOUD GATEWAY FEATURES DEMONSTRATED
+================================================================================
+
+PREDICATES (Route Matching)
+---------------------------
+- path()       : Path pattern matching (/items/**)
+- method()     : HTTP method matching (GET, POST, PUT, DELETE)
+- header()     : Header value matching (X-API-Version: v2)
+- query()      : Query parameter presence (?q=)
+- cookie()     : Cookie value matching (preview_mode=true)
+- weight()     : Traffic percentage split (10%/90% for canary)
+- between()    : Time-based matching (maintenance windows)
+
+BEFORE FILTERS (Request Modification)
+-------------------------------------
+- uri()                         : Set target URI
+- rewritePath()                 : Rewrite request path with regex
+- addRequestHeader()            : Add headers to request
+- setRequestHeader()            : Set/override request headers
+- removeRequestHeader()         : Remove request headers
+- mapRequestHeader()            : Map one header to another
+- addRequestHeadersIfNotPresent(): Add headers only if not present
+- preserveHostHeader()          : Preserve original Host header
+- requestSize()                 : Validate request body size
+- requestHeaderSize()           : Validate request header size
+- addRequestParameter()         : Add query parameters
+- removeRequestParameter()      : Remove query parameters
+- prefixPath()                  : Add prefix to path
+- stripPrefix()                 : Remove path prefix
+- setPath()                     : Set/replace path
+
+AFTER FILTERS (Response Modification)
+-------------------------------------
+- addResponseHeader()           : Add headers to response
+- removeResponseHeader()        : Remove response headers
+- dedupeResponseHeader()        : Remove duplicate headers
+
+OTHER FILTERS
+-------------
+- redirectTo()                  : HTTP redirects (301, 302)
+- Custom HandlerFilterFunction  : Security headers injection
+
+================================================================================
+                              AVAILABLE ROUTES
+================================================================================
+
+Main Service Routes:
+- auth-service              : /auth/**
+- items-service             : /items/**
+
+Advanced Predicate Routes:
+- items-get-versioned       : /items/** (GET + X-API-Version: v2)
+- items-search              : /items/search?q=
+- items-preview             : /items/** (cookie: preview_mode=true)
+- items-canary              : /items/** (10% weight)
+- items-stable              : /items/** (90% weight)
+- maintenance-window        : /items/** (time-based)
+
+Redirect Routes:
+- legacy-items-redirect     : /api/items/** -> /items (301)
+- legacy-auth-redirect      : /api/auth/** -> /auth (301)
+- docs-redirect             : /docs, /documentation -> /swagger-ui.html (302)
+
+Path Manipulation Routes:
+- strip-prefix-demo         : /gateway/items/**
+- prefix-path-demo          : /v1/items/**
+
+Query Parameter Routes:
+- items-list-with-defaults  : GET /items (adds sort, order; removes debug)
+
+Utility Routes:
+- gateway-health            : /health
+- secure-items              : /secure/items/**
+
+Header Enrichment Routes:
+- items-with-metadata-headers : /api/v1/enriched/items/**
+- items-with-audit-headers    : /api/v1/audited/items/**
+- staging-items               : /staging/items/**
+- items-v2                    : /v2/items/**
+
+Custom Response Routes:
+- api-info                  : /api/info
+- deprecated-endpoint       : /api/deprecated/**
+- fallback                  : /** (404)
+
+================================================================================
+                           SECURITY HEADERS ADDED
+================================================================================
+
+All routes include these security headers:
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection: 1; mode=block
+- Referrer-Policy: strict-origin-when-cross-origin
+- Content-Security-Policy: default-src 'self'
+- Permissions-Policy: geolocation=(), microphone=(), camera=()
+- Strict-Transport-Security: max-age=31536000; includeSubDomains
+- Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+- Pragma: no-cache
+
+================================================================================
+                              NEW METRICS
+================================================================================
+
+| Metric Name                    | Type    | Tags                          |
+|--------------------------------|---------|-------------------------------|
+| gateway.http.requests          | Timer   | method, uri, status, outcome  |
+| gateway.http.slow.requests     | Counter | method, uri                   |
+
+================================================================================
+                         NEW CONFIGURATION PROPERTIES
+================================================================================
+
+gateway:
+  request:
+    max-size: 5242880              # 5MB max body size
+    max-header-size: 16384         # 16KB max header size
+  logging:
+    enabled: true
+    include-headers: false
+    include-payload: false
+    include-query-string: true
+    slow-request-threshold-ms: 1000
+  security:
+    headers:
+      enabled: true
+      hsts-max-age: 31536000
+      content-security-policy: "default-src 'self'"
+  routing:
+    canary-percentage: 10
+    weight-routing-enabled: true
+
+================================================================================
+                              PLAN FILE
+================================================================================
+
+Location: planning/2026-01-15-spring-cloud-gateway-features-exploration-PLAN.md
+
+================================================================================
+                              BUILD STATUS
+================================================================================
+
+Build: SUCCESS
+Tests: Skipped (per user request)
+
+================================================================================
+                         BUG FIXES (2026-01-16)
+================================================================================
+
+Date: 2026-01-16
+
+Issue 1: API Gateway failed to start with NoClassDefFoundError:
+         com/fasterxml/jackson/core/JsonProcessingException
+
+Root Cause:
+- Spring Cloud Gateway 5.0.0 has a known bug (#4001) with Jackson 3 compatibility
+- The AfterFilterFunctions (removeResponseHeader, addResponseHeader,
+  dedupeResponseHeader) internally reference com.fasterxml.jackson package
+- Jackson 3.x moved packages from com.fasterxml.jackson to tools.jackson
+- This bug is fixed in Spring Cloud Gateway 5.0.1
+
+Resolution:
+- Updated Spring Cloud version to 2025.1.1-SNAPSHOT which includes the fix
+- Added Spring snapshot repository to pom.xml
+
+Issue 2: Non-standard Bearer token format
+
+Root Cause:
+- Auth service was using "Bearer: " (with colon) instead of standard "Bearer "
+- RFC 6750 (OAuth 2.0 Bearer Token) specifies "Bearer " without colon
+
+Resolution:
+- Fixed Auth service to use standard OAuth 2.0 format "Bearer " (RFC 6750)
+- Updated all code and tests that reference Bearer tokens to use correct format
+
+Files Changed:
+- api-gateway/pom.xml (Spring Cloud 2025.1.1-SNAPSHOT + snapshot repo)
+- Auth/src/main/java/.../AuthController.java (Bearer format fix)
+- api-gateway/src/main/java/.../AuthenticationFilter.java (Bearer format fix)
+- api-gateway/src/main/java/.../DefaultAuthServiceClient.java (Bearer format fix)
+- api-gateway/src/main/java/.../DefaultAuthServiceClientManual.java (Bearer format fix)
+- Auth integration tests (Bearer format fix)
+- e2e-tests (Bearer format fix)
+- frontend/src/services/api.ts (Bearer format fix)
+- tests/performance/utils/helpers.js (Bearer format fix)
+- Documentation files updated to reflect standard OAuth 2.0 format
+
+================================================================================
+                         KAFKA INFRASTRUCTURE ADDED
+================================================================================
+
+Date: 2026-01-15
+
+Services added to docker-compose.yml:
+
+1. Apache Kafka 4.1.1
+   - Image: apache/kafka:4.1.1
+   - Ports: 9092 (broker), 9093 (controller)
+   - Mode: KRaft (no Zookeeper required)
+   - Features:
+     * Native consensus protocol
+     * Auto-create topics enabled
+     * 3 partitions by default
+     * Health check configured
+     * Persistent storage (kafka-data volume)
+
+2. Kafka UI v0.7.2
+   - Image: provectuslabs/kafka-ui:v0.7.2
+   - Port: 8080
+   - Features:
+     * Web-based cluster management
+     * Dynamic configuration enabled
+     * Connected to onlineshop-cluster
+
+Configuration highlights:
+- KAFKA_NODE_ID: 1
+- KAFKA_PROCESS_ROLES: broker,controller
+- KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+- KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+- KAFKA_NUM_PARTITIONS: 3
+- CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+Access URLs:
+- Kafka broker: localhost:9092
+- Kafka UI: http://localhost:8080
+
+================================================================================

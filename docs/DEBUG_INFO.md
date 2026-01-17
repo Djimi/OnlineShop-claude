@@ -1,7 +1,7 @@
 # Debug Info
 
 > **Important:** When making code changes to backend services, you MUST:
-> 1. Build the JAR with Maven from the service directory (`./mvnw.cmd clean package`)
+> 1. Build the JAR with Maven from the service directory (`./mvnw clean package`)
 > 2. Stop the running service (`docker compose down <service-name>`)
 > 3. Rebuild the Docker image from root (`docker compose up -d --build <service-name>`)
 >
@@ -44,4 +44,4 @@ cd frontend && npm run dev
 # Frontend build
 cd frontend && npm run build
 ```
-
+> **Important:** If you ran into an issue that container is existing, check whether it was created by that docker compose file or not. If not, you need to remove it manually using `docker rm <container-id>` command.

@@ -74,7 +74,7 @@ export function validateToken(baseUrl, token) {
         `${baseUrl}/api/v1/auth/validate`,
         {
             headers: {
-                'Authorization': `Bearer: ${token}`,
+                'Authorization': `Bearer ${token}`,
             },
             tags: { operation: 'validate' },
             responseCallback: http.expectedStatuses(200),

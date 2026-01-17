@@ -104,4 +104,4 @@ cd Auth
 ### Token Validation Fails
 1. Check token hasn't expired (see `session.expiration` config)
 2. Verify session exists in database
-3. Check token is passed correctly (with "Bearer: " prefix)
+3. Check token is passed correctly (with "Bearer " prefix per RFC 6750)

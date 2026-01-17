@@ -115,21 +115,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
-    @ExceptionHandler(InvalidTokenFormatException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidTokenFormatException(
-            InvalidTokenFormatException ex,
-            WebRequest request) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .type("https://api.onlineshop.com/errors/invalid-token-format")
-                .title("Unauthorized")
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .detail(ex.getMessage())
-                .instance(request.getDescription(false).replace("uri=", ""))
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
-    }
-
     @ExceptionHandler(MissingAuthorizationHeaderException.class)
     public ResponseEntity<ErrorResponse> handleMissingAuthorizationHeaderException(
             MissingAuthorizationHeaderException ex,

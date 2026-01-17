@@ -1,0 +1,106 @@
+NEXT:
+
+
+
+- Migrate shortcuts to VS code
+- Set VS code for Java coding
+- PostToolUse
+- claudeignore to be configured
+- To fix 403 error on register
+- To fix login with testuser and testpass
+- to play with api-gateway
+- to check bucket4j
+- to check how we make the component start if Redis is down and to retry connecting after
+- To check how to put invalida tokens, but for smaller amount of time than the others
+- GatewayMetrics - what else could be added
+- Check hibernate requests executed
+- Check why register threshold is so much higher than login
+- Read about actuator (Gemini)
+- Change liveness cdhecks for the services
+- check Spring integration with docker compose (to start needed containers on app start)
+- Check CORS through the whole flow
+
+
+
+
+
+
+LATER:
+
+AI tools to check:
+
+- Cody
+- ChatGPT o1 pro mode
+- Anti gravity
+
+--------------
+Check how to autoatically continue with claude when credits are avaialble
+----------------------
+
+How  we can get newest version ofl ibrarie withouth spending hube amount of tokens?
+-----------------
+
+Currently items service is migrated to DDD even though it 
+could be not the best implementation
+
+----------
+
+Migrate error responses to the new spring functionality for them
+
+-------------
+
+https://docs.spring.io/spring-framework/reference/web/webmvc-functional.html
+
+------------
+
+New features in spring boot 4 for testing: https://rieckpil.de/whats-new-for-testing-in-spring-boot-4-0-and-spring-framework-7/
+
+---------------
+
+
+
+
+Key Functionalities to Learn
+Path Rewriting & Stripping: Modify the URI before it reaches the downstream service (e.g., removing a version prefix like /v1).
+
+Rate Limiting with Redis: Prevent service abuse by limiting requests based on IP, user ID, or API keys.
+
+Custom Global Filters: Implement cross-cutting concerns like logging execution time, adding correlation IDs, or custom security checks.
+
+Circuit Breaker (Resilience4j): Gracefully handle downstream service failures by returning a "fallback" response instead of a 500 error.
+
+Request/Response Transformation: Dynamically add, remove, or modify headers and body content (e.g., adding a X-Gateway-Auth header).
+
+Query Parameter Routing: Route traffic to different versions of a service based on a version parameter in the URL.
+
+Header-Based Routing: Implement "Canary" or "Blue-Green" deployments by routing users with a specific header (e.g., X-Beta-User: true) to a preview environment.
+
+
+
+
+what is that:
+Using generated security password: d34be65b-e26a-48f5-8d74-85b4c2696cf1
+
+
+
+---------------
+
+CommonsRequestLoggingFilter
+
+vs
+
+# Enable embedded Tomcat access logs (logs URL + status automatically)
+server.tomcat.accesslog.enabled=true
+server.tomcat.accesslog.pattern=%h %l %u %t "%r" %s %b
+
+# (Optional) conditionally log only specific statuses
+# server.tomcat.accesslog.condition-if="${response.status >= 400}"
+— Spring Boot access logs built-in config logs URL and response code without custom code.
+runebook.dev
+
+or using Spring’s built-in request logging (no body):
+
+properties
+Copy code
+logging.level.org.springframework.web=TRACE
+spring.mvc.log-request-details=true
