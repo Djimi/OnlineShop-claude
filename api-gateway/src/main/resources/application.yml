@@ -1,5 +1,10 @@
 server:
   port: 10000
+  # Compression settings for response body
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
 
 spring:
   application:
@@ -12,6 +17,7 @@ spring:
   cloud:
     gateway:
       mvc:
+        # CORS Configuration
         cors:
           cors-configurations:
             '[/**]':
@@ -28,6 +34,12 @@ spring:
                 - OPTIONS
                 - PATCH
               allowed-headers: "*"
+              exposed-headers:
+                - X-Request-Id
+                - X-Correlation-Id
+                - X-Gateway-Response-Time
+                - X-Served-By
+                - X-Canary
               allow-credentials: true
               max-age: 3600
 
@@ -43,13 +55,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,gateway
   endpoint:
     health:
       show-details: when-authorized
+    gateway:
+      enabled: true
   metrics:
     tags:
       application: api-gateway
+    distribution:
+      percentiles-histogram:
+        gateway.http.requests: true
+      percentiles:
+        gateway.http.requests: 0.5, 0.75, 0.95, 0.99
+      slo:
+        gateway.http.requests: 100ms, 500ms, 1000ms, 2000ms
 
 # Custom gateway configuration
 gateway:
@@ -58,12 +79,23 @@ gateway:
     validate-endpoint: /api/v1/auth/validate
   items:
     service-url: http://localhost:9000
+
+  # Request validation settings
+  request:
+    # Maximum request body size (5MB default)
+    max-size: 5242880
+    # Maximum header size (16KB default)
+    max-header-size: 16384
+
+  # Caching configuration
   cache:
     caffeine:
       ttl-seconds: 60
       max-size: 10000
     redis:
       ttl-seconds: 300
+
+  # Rate limiting configuration
   ratelimit:
     anonymous:
       requests-per-minute: 60
@@ -72,4 +104,50 @@ gateway:
       requests-per-minute: 300
       burst: 50
 
-debug: true
+  # Request/Response logging configuration
+  logging:
+    enabled: true
+    # Include request headers in logs (may contain sensitive data)
+    include-headers: false
+    # Include request/response payload in logs (may contain sensitive data)
+    include-payload: false
+    # Include query string in logs
+    include-query-string: true
+    # Threshold in ms to mark request as slow
+    slow-request-threshold-ms: 1000
+
+  # Security headers configuration
+  security:
+    headers:
+      # Enable/disable security headers globally
+      enabled: true
+      # HSTS max-age in seconds (1 year default)
+      hsts-max-age: 31536000
+      # Include subdomains in HSTS
+      hsts-include-subdomains: true
+      # Content Security Policy
+      content-security-policy: "default-src 'self'"
+      # Referrer Policy
+      referrer-policy: "strict-origin-when-cross-origin"
+      # Permissions Policy
+      permissions-policy: "geolocation=(), microphone=(), camera=()"
+
+  # Canary/A/B testing configuration
+  routing:
+    # Canary traffic percentage (0-100)
+    canary-percentage: 10
+    # Enable/disable weight-based routing
+    weight-routing-enabled: true
+
+# Logging configuration
+logging:
+  level:
+    com.onlineshop.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    # Reduce noise from framework
+    org.springframework.web: INFO
+    io.lettuce: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId:-}] %-5level %logger{36} - %msg%n"
+
+debug: false
