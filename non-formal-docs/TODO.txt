@@ -1,6 +1,9 @@
 NEXT:
 
 
+
+- Migrate shortcuts to VS code
+- Set VS code for Java coding
 - PostToolUse
 - claudeignore to be configured
 - To fix 403 error on register
