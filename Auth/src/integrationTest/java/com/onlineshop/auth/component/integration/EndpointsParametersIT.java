@@ -7,6 +7,7 @@ import com.onlineshop.auth.BaseIntegrationTest;
 import com.onlineshop.auth.dto.ErrorResponse;
 import com.onlineshop.auth.dto.LoginRequest;
 import com.onlineshop.auth.dto.RegisterRequest;
+import com.onlineshop.auth.dto.ValidateResponse;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -112,13 +113,20 @@ class EndpointsParametersIT extends BaseIntegrationTest {
                 .expectStatus().isEqualTo(expectedStatus)
                 .returnResult(String.class);
 
-        ErrorResponse errorResponse = objectMapper.readValue(
-                result.getResponseBody(),
-                ErrorResponse.class
-        );
-
-        assertThat(errorResponse.getStatus()).isEqualTo(expectedStatus.value());
-        assertThat(errorResponse.getInstance()).isEqualTo(VALIDATE_PATH);
+        if (expectedStatus.is2xxSuccessful()) {
+            ValidateResponse response = objectMapper.readValue(
+                    result.getResponseBody(),
+                    ValidateResponse.class
+            );
+            assertThat(response.isValid()).isFalse();
+        } else {
+            ErrorResponse errorResponse = objectMapper.readValue(
+                    result.getResponseBody(),
+                    ErrorResponse.class
+            );
+            assertThat(errorResponse.getStatus()).isEqualTo(expectedStatus.value());
+            assertThat(errorResponse.getInstance()).isEqualTo(VALIDATE_PATH);
+        }
     }
 
     // ==================== Test Data Providers ====================
@@ -170,11 +178,11 @@ class EndpointsParametersIT extends BaseIntegrationTest {
     private static Stream<Arguments> invalidValidateHeadersProvider() {
         return Stream.of(
                 arguments("missing Authorization header", null, HttpStatus.BAD_REQUEST),
-                arguments("empty Authorization header", "", HttpStatus.UNAUTHORIZED),
-                arguments("invalid format - no Bearer prefix", "some-token", HttpStatus.UNAUTHORIZED),
-                arguments("invalid format - Bearer with colon (non-standard)", "Bearer: token123", HttpStatus.UNAUTHORIZED),
-                arguments("empty token after Bearer", "Bearer ", HttpStatus.UNAUTHORIZED),
-                arguments("blank token after Bearer", "Bearer    ", HttpStatus.UNAUTHORIZED)
+                arguments("empty Authorization header", "", HttpStatus.OK),
+                arguments("invalid format - no Bearer prefix", "some-token", HttpStatus.OK),
+                arguments("invalid format - Bearer with colon (non-standard)", "Bearer: token123", HttpStatus.OK),
+                arguments("empty token after Bearer", "Bearer ", HttpStatus.OK),
+                arguments("blank token after Bearer", "Bearer    ", HttpStatus.OK)
         );
     }
 

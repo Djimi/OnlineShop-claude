@@ -1,7 +1,6 @@
 package com.onlineshop.auth.controller;
 
 import com.onlineshop.auth.dto.*;
-import com.onlineshop.auth.exception.InvalidTokenFormatException;
 import com.onlineshop.auth.exception.MissingAuthorizationHeaderException;
 import com.onlineshop.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -14,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final AuthService authService;
 
@@ -36,20 +37,23 @@ public class AuthController {
             throw new MissingAuthorizationHeaderException();
         }
         String token = extractToken(authHeader);
+        if (token == null) {
+            return ResponseEntity.ok(ValidateResponse.builder().valid(false).build());
+        }
         ValidateResponse response = authService.validateToken(token);
         return ResponseEntity.ok(response);
     }
 
     private String extractToken(String authHeader) {
         if (authHeader.isBlank()) {
-            throw new InvalidTokenFormatException("Authorization header cannot be empty");
+            return null;
         }
-        if (!authHeader.startsWith("Bearer: ")) {
-            throw new InvalidTokenFormatException("Authorization header must start with 'Bearer: '");
+        if (!authHeader.startsWith(BEARER_PREFIX)) {
+            return null;
         }
-        String token = authHeader.substring(8);
+        String token = authHeader.substring(BEARER_PREFIX.length());
         if (token.isBlank()) {
-            throw new InvalidTokenFormatException("Token cannot be empty");
+            return null;
         }
         return token;
     }

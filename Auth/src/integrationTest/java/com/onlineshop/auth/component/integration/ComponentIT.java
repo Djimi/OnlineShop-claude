@@ -183,18 +183,16 @@ class ComponentIT extends BaseIntegrationTest {
     // ==================== Token Validation Error Tests ====================
 
     @Test
-    void validate_withMissingBearerPrefix_returnsUnauthorized() throws Exception {
+    void validate_withMissingBearerPrefix_returnsValidFalse() throws Exception {
         log.info("Testing token validation without Bearer prefix");
 
-        ErrorResponse errorResponse = validateTokenExpectingError("some-token-without-bearer-prefix");
+        ValidateResponse response = validateTokenWithHeader("some-token-without-bearer-prefix");
 
-        assertErrorResponse(
-                errorResponse,
-                HttpStatus.UNAUTHORIZED,
-                "https://api.onlineshop.com/errors/invalid-token-format",
-                "Unauthorized",
-                VALIDATE_PATH
-        );
+        assertThat(response.isValid()).isFalse();
+        assertThat(response.getUserId()).isNull();
+        assertThat(response.getUsername()).isNull();
+        assertThat(response.getCreatedAt()).isNull();
+        assertThat(response.getExpiresAt()).isNull();
     }
 
     @Test
@@ -280,16 +278,16 @@ class ComponentIT extends BaseIntegrationTest {
         return objectMapper.readValue(result.getResponseBody(), ValidateResponse.class);
     }
 
-    private ErrorResponse validateTokenExpectingError(String authHeader) throws Exception {
-        log.info("Validating token expecting error");
+    private ValidateResponse validateTokenWithHeader(String authHeader) throws Exception {
+        log.info("Validating token with custom header");
         var result = restTestClient.get()
                 .uri(VALIDATE_PATH)
                 .header("Authorization", authHeader)
                 .exchange()
-                .expectStatus().isUnauthorized()
+                .expectStatus().isOk()
                 .returnResult(String.class);
 
-        return objectMapper.readValue(result.getResponseBody(), ErrorResponse.class);
+        return objectMapper.readValue(result.getResponseBody(), ValidateResponse.class);
     }
 
     private <T> T postRequest(String uri, Object body, Class<T> responseType, HttpStatus expectedStatus) throws Exception {
