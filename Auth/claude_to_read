@@ -1,0 +1,196 @@
+workflow?? (check in the repo fot github). Check also in the PR - there are links to the docs
+
+-------------
+
+
+https://code.claude.com/docs/en/hooks-guide - hooks
+
+-------------
+
+headless mode
+
+-------------
+
+Create worktrees: git worktree add ../project-feature-a feature-a
+Launch Claude in each worktree: cd ../project-feature-a && claude
+
+When done delete the working tree: git worktree remove ../project-feature-a
+---------------
+
+CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 ???
+
+ Perfect! Now I'll save the screenshot to your Downloads folder. Let me decode the base64 image data and save it:
+  ⎿  API Error: Claude's response exceeded the 32000 output token maximum. To configure this behavior, set the
+     CLAUDE_CODE_MAX_OUTPUT_TOKENS environment variable.
+	 
+---------
+
+d. Safe YOLO mode
+Instead of supervising Claude, you can use claude --dangerously-skip-permissions to bypass all permission checks and let Claude work uninterrupted until completion. This works well for workflows like fixing lint errors or generating boilerplate code.
+
+Letting Claude run arbitrary commands is risky and can result in data loss, system corruption, or even data exfiltration (e.g., via prompt injection attacks). To minimize these risks, use --dangerously-skip-permissions in a container without internet access. You can follow this reference implementation using Docker Dev Containers.
+
+
+https://github.com/anthropics/claude-code/tree/main/.devcontainer
+
+------------------
+
+
+
+
+MCP server for browser:
+
+https://github.com/modelcontextprotocol/servers/tree/c19925b8f0f2815ad72b08d2368f0007c86eb8e6/src/puppeteer
+
+----------------------
+
+
+
+Run install github app to tag claude from github
+
+----------
+
+GH Tools usage
+
+--------
+
+To do
+------
+
+
+TDD
+
+-------
+
+multiple subagents
+-------
+
+
+
+message queue
+
+----------
+
+Shortcuts:
+
+Ctrl+O - To view Claude’s thinking process, press Ctrl+O to toggle verbose mode and see the internal reasoning displayed as gray italic text
+
+
+---------
+
+Model	Input	Output
+Claude Opus 4.5	$5 per million tokens	$25 per million tokens
+Claude Sonnet 4.5	$3 per million tokens	$15 per million tokens
+Claude Haiku 4.5	$1 per million tokens	$5 per million tokens
+
+
+
+Agents - https://code.claude.com/docs/en/sub-agents
+
+Plan mode - https://code.claude.com/docs/en/settings#available-settings
+
+// .claude/settings.json
+{
+  "permissions": {
+    "defaultMode": "plan"
+  }
+}
+
+
+
+MCP - https://code.claude.com/docs/en/mcp#use-mcp-resources
+
+
+
+---------
+"think" < "think hard" < "think harder" < "ultrathink.
+
+thinking 
+
+
+Sonnet 4.5 and Opus 4.5 have thinking enabled by default. All other models have thinking disabled by default. Use /model to view or switch your current model.
+You can configure thinking mode for Claude Code in two ways:
+Scope	How to enable	Details
+Global default	Use /config to toggle thinking mode on	Sets your default across all projects.
+Saved as alwaysThinkingEnabled in ~/.claude/settings.json
+Environment variable override	Set MAX_THINKING_TOKENS environment variable	When set, applies a custom token budget to all requests, overriding your thinking mode configuration. Example: export MAX_THINKING_TOKENS=1024
+
+----------
+Ultrathink
+
+Per-request thinking with ultrathink
+
+Other phrases like “think”, “think hard”, and “think more” are interpreted as regular prompt instructions and don’t allocate thinking tokens.
+
+The ultrathink keyword only works when MAX_THINKING_TOKENS is not set. When MAX_THINKING_TOKENS is configured, it takes priority and controls the thinking budget for all requests.
+
+
+When thinking is enabled (via /config or ultrathink), Claude can use up to 31,999 tokens from your output budget for internal reasoning
+When thinking is disabled, Claude uses 0 tokens for thinking
+------------
+
+Custom commands (https://code.claude.com/docs/en/common-workflows#create-custom-slash-commands)
+https://code.claude.com/docs/en/slash-commands
+
+
+-------------
+
+How to make claude code to create PR in Git?
+
+----------
+
+Background bash commands
+
+--------------
+
+MCP slash commands
+
+---------
+
+Skills vs slash commands vs agents
+
+.claude/skills/code-review/
+
+
+
+-------
+
+Sandbox settings
+
+
+----------
+
+Managing context limits:
+
+If you are using Claude in an agent harness that compacts context or allows saving context to external files (like in Claude Code), we suggest adding this information to your prompt so Claude can behave accordingly. Otherwise, Claude may sometimes naturally try to wrap up work as it approaches the context limit. Below is an example prompt:
+
+Sample prompt
+Your context window will be automatically compacted as it approaches its limit, allowing you to continue working indefinitely from where you left off. Therefore, do not stop tasks early due to token budget concerns. As you approach your token budget limit, save your current progress and state to memory before the context window refreshes. Always be as persistent and autonomous as possible and complete tasks fully, even if the end of your budget is approaching. Never artificially stop any task early regardless of the context remaining.
+The memory tool pairs naturally with context awareness for seamless context transitions.
+
+---------
+
+
+Memory tool
+
+---------------
+
+OpenCode?
+
+Claude telecode
+
+------
+
+ralpf algoritm claude
+
+---------------
+
+If you feel very stronly about this, you might even consider setting up a Claude Code Stop hook that runs your formatter & linter and presents errors to Claude for it to fix. Don't make Claude find the formatting issues itself.
+
+Bonus points: use a linter that can automatically fix issues (we like Biome), and carefully tune your rules about what can safely be auto-fixed for maximum (safe) coverage.
+
+You could also create a Slash Command that includes your code guidelines and which points claude at the changes in version control, or at your git status, or similar. This way, you can handle implementation and formatting separately. You will see better results with both as a result.
+
+https://code.claude.com/docs/en/hooks#stop
+
+------------
