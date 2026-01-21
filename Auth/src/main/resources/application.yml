@@ -18,6 +18,8 @@ spring:
     username: auth
     password: authpassword
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 2000
 
   jpa:
     hibernate:
@@ -32,20 +34,26 @@ session:
   expiration: 3600
 
 management:
+  # Individual endpoint settings (singular)
+  endpoint:
+    health:
+      show-details: always
+    env:
+      show-values: always
+    configprops:
+      show-values: always
+
+  # Global exposure settings (plural)
   endpoints:
     web:
       exposure:
-        include: health,env,configprops
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when-authorized
-      probes:
-        enabled: true
-  health:
-    livenessState:
-      enabled: true
-    readinessState:
+        include: "*"
+
+  metrics:
+    tags:
+      application: auth
+  info:
+    env:
       enabled: true
 
 logging:

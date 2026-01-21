@@ -46,6 +46,8 @@ info:
 # Actuator & Metrics
 management:
   endpoint:
+    health:
+      show-details: always
     env:
       show-values: always
     configprops:
@@ -54,8 +56,6 @@ management:
     web:
       exposure:
         include: "*"
-    health:
-      show-details: always
   metrics:
     tags:
       application: api-gateway
