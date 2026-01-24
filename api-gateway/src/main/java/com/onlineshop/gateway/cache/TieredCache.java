@@ -145,14 +145,17 @@ public class TieredCache implements Cache {
     public boolean evictIfPresent(Object key) {
         boolean l1Evicted = l1Cache.evictIfPresent(key);
 
-        boolean l2Evicted = false;
-        try {
-            l2Evicted = circuitBreaker.executeSupplier(() -> l2Cache.evictIfPresent(key));
-        } catch (Exception e) {
-            log.warn("Failed to evictIfPresent from L2 cache (Redis): {}", e.getMessage());
-        }
+        circuitBreaker.executeCompletionStage(() ->
+                CompletableFuture.runAsync(() -> l2Cache.evictIfPresent(key), l2WriteExecutor)
+        ).whenComplete((ignored, throwable) -> {
+            if (throwable == null) {
+                log.debug("EvictedIfPresent from L2 for key hash: {}", key);
+            } else {
+                log.warn("Failed to evictIfPresent from L2 cache (Redis): {}", throwable.getMessage());
+            }
+        });
 
-        return l1Evicted || l2Evicted;
+        return l1Evicted;
     }
 
     @Override
@@ -176,13 +179,16 @@ public class TieredCache implements Cache {
     public boolean invalidate() {
         boolean l1Invalidated = l1Cache.invalidate();
 
-        boolean l2Invalidated = false;
-        try {
-            l2Invalidated = circuitBreaker.executeSupplier(l2Cache::invalidate);
-        } catch (Exception e) {
-            log.warn("Failed to invalidate L2 cache (Redis): {}", e.getMessage());
-        }
+        circuitBreaker.executeCompletionStage(() ->
+                CompletableFuture.runAsync(l2Cache::invalidate, l2WriteExecutor)
+        ).whenComplete((ignored, throwable) -> {
+            if (throwable == null) {
+                log.debug("Invalidated L2 cache");
+            } else {
+                log.warn("Failed to invalidate L2 cache (Redis): {}", throwable.getMessage());
+            }
+        });
 
-        return l1Invalidated || l2Invalidated;
+        return l1Invalidated;
     }
 }
