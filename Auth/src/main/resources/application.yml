@@ -38,6 +38,13 @@ management:
   endpoint:
     health:
       show-details: always
+      group:
+        liveness:
+          show-details: always
+        readiness:
+          show-details: always
+        custom:
+          include: [db, ssl]
     env:
       show-values: always
     configprops:

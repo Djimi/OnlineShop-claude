@@ -7,6 +7,8 @@ import com.onlineshop.gateway.dto.ValidateResponse;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -65,8 +67,13 @@ public class CacheConfig {
     public CacheManager cacheManager(
             CaffeineCacheManager caffeineCacheManager,
             RedisCacheManager redisCacheManager,
-            CircuitBreaker redisCacheCircuitBreaker) {
-        return new TieredCacheManager(caffeineCacheManager, redisCacheManager, redisCacheCircuitBreaker);
+            CircuitBreaker redisCacheCircuitBreaker,
+            io.micrometer.core.instrument.MeterRegistry meterRegistry) {
+        return new TieredCacheManager(
+                caffeineCacheManager,
+                redisCacheManager,
+                redisCacheCircuitBreaker,
+                meterRegistry);
     }
 
     /**
@@ -74,12 +81,15 @@ public class CacheConfig {
      * Provides nanosecond access for frequently accessed tokens.
      */
     @Bean
-    public CaffeineCacheManager caffeineCacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager();
-        manager.setCaffeine(Caffeine.newBuilder()
+    public CaffeineCacheManager caffeineCacheManager(MeterRegistry meterRegistry) {
+        Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder()
                 .recordStats()  // Enables Micrometer metrics
                 .expireAfterWrite(Duration.ofSeconds(caffeineTtlSeconds))
-                .maximumSize(caffeineMaxSize));
+                .maximumSize(caffeineMaxSize);
+        com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache = caffeineBuilder.build();
+        CaffeineCacheManager manager = new CaffeineCacheManager();
+        manager.registerCustomCache("l1-auth-tokens", nativeCache);
+        CaffeineCacheMetrics.monitor(meterRegistry, nativeCache, "l1-auth-tokens");
         return manager;
     }
 
@@ -99,6 +109,7 @@ public class CacheConfig {
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .enableStatistics()  // Enables Micrometer metrics
+                .initialCacheNames(java.util.Set.of("l2-auth-tokens"))
                 .build();
     }
 

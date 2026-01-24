@@ -97,6 +97,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     "X-User-Id", validateResponse.getUserId().toString(),
                     "X-Username", sanitizedUsername
             ));
+            wrappedRequest.setAttribute(RequestAttributeKeys.USER_ID, validateResponse.getUserId().toString());
 
             log.debug("Authenticated request for user: {} (ID: {})",
                     sanitizedUsername, validateResponse.getUserId());

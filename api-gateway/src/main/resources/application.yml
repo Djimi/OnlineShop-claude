@@ -78,10 +78,10 @@ gateway:
       ttl-seconds: 300
   ratelimit:
     anonymous:
-      requests-per-minute: 60
+      requests-per-minute: 3
       burst: 10
     authenticated:
-      requests-per-minute: 300
+      requests-per-minute: 5
       burst: 50
 
 debug: true

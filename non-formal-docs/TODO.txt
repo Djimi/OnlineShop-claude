@@ -1,7 +1,11 @@
 NEXT:
 
 
-
+- To fix/check Redis binary representation for Bucket4j
+- Check metrics/micrometer
+- learn UI
+- set up AI team
+- sync = true On cache annotation?
 - Migrate shortcuts to VS code
 - Set VS code for Java coding
 - PostToolUse
