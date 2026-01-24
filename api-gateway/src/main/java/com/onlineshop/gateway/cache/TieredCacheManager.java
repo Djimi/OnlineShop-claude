@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 /**
  * A tiered CacheManager that combines L1 (Caffeine) and L2 (Redis) caches.
@@ -37,6 +38,7 @@ public class TieredCacheManager implements CacheManager {
     private final CaffeineCacheManager l1CacheManager;
     private final RedisCacheManager l2CacheManager;
     private final CircuitBreaker circuitBreaker;
+    private final Executor l2WriteExecutor;
     private final MeterRegistry meterRegistry;
     private final Map<String, TieredCache> cacheMap = new ConcurrentHashMap<>();
     private final Set<String> monitoredCaches = ConcurrentHashMap.newKeySet();
@@ -45,10 +47,12 @@ public class TieredCacheManager implements CacheManager {
             CaffeineCacheManager l1CacheManager,
             RedisCacheManager l2CacheManager,
             CircuitBreaker circuitBreaker,
+            Executor l2WriteExecutor,
             MeterRegistry meterRegistry) {
         this.l1CacheManager = l1CacheManager;
         this.l2CacheManager = l2CacheManager;
         this.circuitBreaker = circuitBreaker;
+        this.l2WriteExecutor = l2WriteExecutor;
         this.meterRegistry = meterRegistry;
         log.info("TieredCacheManager initialized with L1 (Caffeine) and L2 (Redis) caches");
     }
@@ -77,7 +81,7 @@ public class TieredCacheManager implements CacheManager {
 //        bindCacheMetrics(l2Cache, "redisCacheManager");
 
         log.debug("Created TieredCache '{}' with L1='{}' and L2='{}'", name, l1Name, l2Name);
-        return new TieredCache(name, l1Cache, l2Cache, circuitBreaker);
+        return new TieredCache(name, l1Cache, l2Cache, circuitBreaker, l2WriteExecutor);
     }
 
     private void bindCacheMetrics(Cache cache, String cacheManagerName) {

@@ -2,7 +2,6 @@ package com.onlineshop.gateway.ratelimit;
 
 import tools.jackson.databind.ObjectMapper;
 import com.onlineshop.gateway.dto.ErrorResponse;
-import com.onlineshop.gateway.exception.TooManyRequestsException;
 import com.onlineshop.gateway.metrics.GatewayMetrics;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -32,17 +31,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final GatewayMetrics metrics;
     private final ProxyManager<String> proxyManager;
-    private final RateLimitConfig rateLimitConfig;
+    private final RateLimitConfigProperties rateLimitConfigProperties;
 
     public RateLimitFilter(
             ObjectMapper objectMapper,
             GatewayMetrics metrics,
             ProxyManager<String> proxyManager,
-            RateLimitConfig rateLimitConfig) {
+            RateLimitConfigProperties rateLimitConfigProperties) {
         this.objectMapper = objectMapper;
         this.metrics = metrics;
         this.proxyManager = proxyManager;
-        this.rateLimitConfig = rateLimitConfig;
+        this.rateLimitConfigProperties = rateLimitConfigProperties;
     }
 
     @Override
@@ -80,16 +79,16 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private BucketConfiguration createAnonymousConfig() {
         Bandwidth limit = Bandwidth.classic(
-                rateLimitConfig.anonymous().requestsPerMinute(),
-                Refill.intervally(rateLimitConfig.anonymous().requestsPerMinute(), Duration.ofMinutes(1))
+                rateLimitConfigProperties.anonymous().requestsPerMinute(),
+                Refill.intervally(rateLimitConfigProperties.anonymous().requestsPerMinute(), Duration.ofMinutes(1))
         );
         return BucketConfiguration.builder().addLimit(limit).build();
     }
 
     private BucketConfiguration createAuthenticatedConfig() {
         Bandwidth limit = Bandwidth.classic(
-                rateLimitConfig.authenticated().requestsPerMinute(),
-                Refill.intervally(rateLimitConfig.authenticated().requestsPerMinute(), Duration.ofMinutes(1))
+                rateLimitConfigProperties.authenticated().requestsPerMinute(),
+                Refill.intervally(rateLimitConfigProperties.authenticated().requestsPerMinute(), Duration.ofMinutes(1))
         );
         return BucketConfiguration.builder().addLimit(limit).build();
     }

@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * A tiered cache implementation that wraps L1 (Caffeine) and L2 (Redis) caches.
@@ -24,12 +26,14 @@ public class TieredCache implements Cache {
     private final Cache l1Cache;
     private final Cache l2Cache;
     private final CircuitBreaker circuitBreaker;
+    private final Executor l2WriteExecutor;
 
-    public TieredCache(String name, Cache l1Cache, Cache l2Cache, CircuitBreaker circuitBreaker) {
+    public TieredCache(String name, Cache l1Cache, Cache l2Cache, CircuitBreaker circuitBreaker, Executor l2WriteExecutor) {
         this.name = name;
         this.l1Cache = l1Cache;
         this.l2Cache = l2Cache;
         this.circuitBreaker = circuitBreaker;
+        this.l2WriteExecutor = l2WriteExecutor;
     }
 
     @Override
@@ -107,14 +111,17 @@ public class TieredCache implements Cache {
         // Always write to L1 (Caffeine)
         l1Cache.put(key, value);
 
-        // Write to L2 (Redis) with circuit breaker protection
-        try {
-            circuitBreaker.executeRunnable(() -> l2Cache.put(key, value));
-            log.debug("Stored in L1 and L2 for key hash: {}", key);
-        } catch (Exception e) {
-            log.warn("Failed to write to L2 cache (Redis): {}", e.getMessage());
-            // L1 write succeeded, so the cache operation is partially successful
-        }
+        // Write to L2 (Redis) asynchronously with circuit breaker protection
+        circuitBreaker.executeCompletionStage(() ->
+                CompletableFuture.runAsync(() -> l2Cache.put(key, value), l2WriteExecutor)
+        ).whenComplete((ignored, throwable) -> {
+            if (throwable == null) {
+                log.debug("Stored in L2 for key hash: {}", key);
+            } else {
+                log.warn("Failed to write to L2 cache (Redis): {}", throwable.getMessage());
+                // L1 write succeeded, so the cache operation is partially successful
+            }
+        });
     }
 
     @Override
@@ -122,13 +129,16 @@ public class TieredCache implements Cache {
         // Evict from L1
         l1Cache.evict(key);
 
-        // Evict from L2 with circuit breaker protection
-        try {
-            circuitBreaker.executeRunnable(() -> l2Cache.evict(key));
-            log.debug("Evicted from L1 and L2 for key hash: {}", key);
-        } catch (Exception e) {
-            log.warn("Failed to evict from L2 cache (Redis): {}", e.getMessage());
-        }
+        // Evict from L2 asynchronously with circuit breaker protection
+        circuitBreaker.executeCompletionStage(() ->
+                CompletableFuture.runAsync(() -> l2Cache.evict(key), l2WriteExecutor)
+        ).whenComplete((ignored, throwable) -> {
+            if (throwable == null) {
+                log.debug("Evicted from L2 for key hash: {}", key);
+            } else {
+                log.warn("Failed to evict from L2 cache (Redis): {}", throwable.getMessage());
+            }
+        });
     }
 
     @Override
@@ -150,13 +160,16 @@ public class TieredCache implements Cache {
         // Clear L1
         l1Cache.clear();
 
-        // Clear L2 with circuit breaker protection
-        try {
-            circuitBreaker.executeRunnable(l2Cache::clear);
-            log.debug("Cleared L1 and L2 caches");
-        } catch (Exception e) {
-            log.warn("Failed to clear L2 cache (Redis): {}", e.getMessage());
-        }
+        // Clear L2 asynchronously with circuit breaker protection
+        circuitBreaker.executeCompletionStage(() ->
+                CompletableFuture.runAsync(l2Cache::clear, l2WriteExecutor)
+        ).whenComplete((ignored, throwable) -> {
+            if (throwable == null) {
+                log.debug("Cleared L2 cache");
+            } else {
+                log.warn("Failed to clear L2 cache (Redis): {}", throwable.getMessage());
+            }
+        });
     }
 
     @Override

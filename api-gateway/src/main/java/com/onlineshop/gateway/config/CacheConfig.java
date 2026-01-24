@@ -68,11 +68,13 @@ public class CacheConfig {
             CaffeineCacheManager caffeineCacheManager,
             RedisCacheManager redisCacheManager,
             CircuitBreaker redisCacheCircuitBreaker,
+            java.util.concurrent.ExecutorService virtualThreadExecutor,
             io.micrometer.core.instrument.MeterRegistry meterRegistry) {
         return new TieredCacheManager(
                 caffeineCacheManager,
                 redisCacheManager,
                 redisCacheCircuitBreaker,
+                virtualThreadExecutor,
                 meterRegistry);
     }
 
