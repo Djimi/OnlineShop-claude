@@ -1,6 +1,11 @@
 NEXT:
 
 
+- change name of the keys fro mbucket4j?
+- change format in redis how bucke4j save
+- check what is the most commond format for saving bucket4j in redis
+
+
 - To fix/check Redis binary representation for Bucket4j
 - Check metrics/micrometer
 - learn UI

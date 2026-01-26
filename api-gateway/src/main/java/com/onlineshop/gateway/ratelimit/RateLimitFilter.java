@@ -66,7 +66,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 ? createAuthenticatedConfig()
                 : createAnonymousConfig();
 
-        Bucket bucket = proxyManager.builder().build(clientKey, config);
+        Bucket bucket = proxyManager.builder().build(clientKey, () -> config);
 
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
