@@ -1,6 +1,7 @@
 package com.onlineshop.gateway.validation;
 
 import com.onlineshop.gateway.exception.InvalidTokenFormatException;
+import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ public class TokenSanitizer {
      * @param token the token to validate
      * @throws InvalidTokenFormatException if token is null, empty, too long, or contains invalid characters
      */
+    @Timed(value = "token.validation.time", description = "Time taken to validate tokens")
     public void validate(String token) {
         if (token == null || token.isBlank()) {
             log.debug("Token validation failed: token is null or empty");

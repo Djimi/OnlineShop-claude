@@ -1,15 +1,22 @@
 package com.onlineshop.gateway.cache;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCache;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 /**
  * A tiered CacheManager that combines L1 (Caffeine) and L2 (Redis) caches.
@@ -31,15 +38,22 @@ public class TieredCacheManager implements CacheManager {
     private final CaffeineCacheManager l1CacheManager;
     private final RedisCacheManager l2CacheManager;
     private final CircuitBreaker circuitBreaker;
+    private final Executor l2WriteExecutor;
+    private final MeterRegistry meterRegistry;
     private final Map<String, TieredCache> cacheMap = new ConcurrentHashMap<>();
+    private final Set<String> monitoredCaches = ConcurrentHashMap.newKeySet();
 
     public TieredCacheManager(
             CaffeineCacheManager l1CacheManager,
             RedisCacheManager l2CacheManager,
-            CircuitBreaker circuitBreaker) {
+            CircuitBreaker circuitBreaker,
+            Executor l2WriteExecutor,
+            MeterRegistry meterRegistry) {
         this.l1CacheManager = l1CacheManager;
         this.l2CacheManager = l2CacheManager;
         this.circuitBreaker = circuitBreaker;
+        this.l2WriteExecutor = l2WriteExecutor;
+        this.meterRegistry = meterRegistry;
         log.info("TieredCacheManager initialized with L1 (Caffeine) and L2 (Redis) caches");
     }
 
@@ -63,8 +77,28 @@ public class TieredCacheManager implements CacheManager {
             throw new IllegalStateException("Failed to create L2 cache for: " + l2Name);
         }
 
+//        bindCacheMetrics(l1Cache, "caffeineCacheManager");
+//        bindCacheMetrics(l2Cache, "redisCacheManager");
+
         log.debug("Created TieredCache '{}' with L1='{}' and L2='{}'", name, l1Name, l2Name);
-        return new TieredCache(name, l1Cache, l2Cache, circuitBreaker);
+        return new TieredCache(name, l1Cache, l2Cache, circuitBreaker, l2WriteExecutor);
+    }
+
+    private void bindCacheMetrics(Cache cache, String cacheManagerName) {
+        String key = cacheManagerName + ":" + cache.getName();
+        if (!monitoredCaches.add(key)) {
+            return;
+        }
+        Iterable<Tag> tags = java.util.List.of(Tag.of("cacheManager", cacheManagerName));
+        if (cache instanceof CaffeineCache caffeineCache) {
+            CaffeineCacheMetrics.monitor(
+                    meterRegistry,
+                    caffeineCache.getNativeCache(),
+                    cache.getName(),
+                    tags);
+        } else if (cache instanceof RedisCache redisCache) {
+            new RedisCacheMetrics(redisCache, cache.getName(), tags).bindTo(meterRegistry);
+        }
     }
 
     @Override

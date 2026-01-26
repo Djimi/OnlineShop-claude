@@ -5,6 +5,11 @@ spring:
   application:
     name: api-gateway
 
+info:
+  app:
+    name: ${spring.application.name} # <--- Dynamic Reference
+    description: "Main entry point for microservices. DPM service"
+
   threads:
     virtual:
       enabled: true
@@ -40,16 +45,23 @@ spring:
 
 # Actuator & Metrics
 management:
+  endpoint:
+    health:
+      show-details: always
+    env:
+      show-values: always
+    configprops:
+      show-values: always
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: when-authorized
+        include: "*"
   metrics:
     tags:
       application: api-gateway
+  info:
+    env:
+      enabled: true
 
 # Custom gateway configuration
 gateway:
@@ -66,10 +78,10 @@ gateway:
       ttl-seconds: 300
   ratelimit:
     anonymous:
-      requests-per-minute: 60
+      requests-per-minute: 3
       burst: 10
     authenticated:
-      requests-per-minute: 300
+      requests-per-minute: 5
       burst: 50
 
 debug: true

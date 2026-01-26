@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
-@Component
+//@Component
 @Slf4j
 public class DefaultTokenCacheManagerManualImpl implements TokenCacheManager {
 

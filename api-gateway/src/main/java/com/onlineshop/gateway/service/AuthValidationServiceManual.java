@@ -11,8 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional; // Still needed for cache.get() return type
 
-@Service
+//@Service
 @Slf4j
+@Deprecated
 public class AuthValidationServiceManual implements TokenValidator {
 
     private final TokenCacheManager cacheManager;
