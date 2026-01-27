@@ -19,6 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 /**
+ *
+ * Another option for implementing propagation from L2 to L1 is to use: https://www.baeldung.com/spring-two-level-cache
+ *
+ *
  * A tiered CacheManager that combines L1 (Caffeine) and L2 (Redis) caches.
  * Each cache request creates a TieredCache that wraps both layers.
  *
