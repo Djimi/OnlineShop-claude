@@ -7,58 +7,57 @@
 | Port       | 10000                                  |
 | Tech Stack | Spring Cloud Gateway, Redis, Caffeine  |
 | Location   | `/api-gateway`                         |
-| Database   | None (uses Redis for caching)          |
+| Database   | None (uses Redis for caching/limits)   |
 
 ## Responsibilities
 
-1. **Routing** - Route requests to appropriate backend services
-2. **CORS** - Handle Cross-Origin Resource Sharing centrally
-3. **Authentication** - Validate JWT tokens before forwarding
-4. **Token Caching** - Two-layer cache for token validations (Caffeine L1 + Redis L2)
-5. **Rate Limiting** - (Future) Protect services from overload
+- **Routing**: Forward `/api/v1/auth/**` → Auth service and `/api/v1/items/**` → Items service.
+- **Authentication**: Enforce Bearer token auth for protected routes.
+- **Token validation caching**: L1 Caffeine + L2 Redis to avoid per-request Auth calls.
+- **Rate limiting**: Distributed limits via Bucket4j + Redis.
+- **Resilience & observability**: Retries/timeouts/circuit breakers (Resilience4j) + Micrometer metrics.
+
+## Contracts (Examples)
+
+- **Public routes** (no auth): `/api/v1/auth/**`
+- **Protected routes** (auth required): `/api/v1/items/**`
+
+Example request:
+```bash
+curl -H "Authorization: Bearer <token>" \
+  http://localhost:10000/api/v1/items
+```
+
+## Authentication Flow (Example)
+
+```
+1. Request hits gateway
+2. /auth/** → forward without auth
+3. /items/** → require Authorization: Bearer <token>
+4. Validate token: L1 cache → L2 cache → Auth service
+5. On success → add X-User-Id, X-Username headers → forward
+6. On failure → 401 Unauthorized
+```
+
+## Token Validation Caching
+
+- **L1 (Caffeine)**: Nanosecond local hits (fast path).
+- **L2 (Redis)**: Shared cache across gateway instances.
+
+Example metric (tag-based):
+```
+gateway.cache.operations.total{layer="l1", service="auth", result="hit"}
+```
 
 ## Key Files
 
 | Purpose         | Location                                                         |
 |-----------------|------------------------------------------------------------------|
 | Configuration   | `api-gateway/src/main/resources/application.yml`                 |
-| Auth Filter     | `api-gateway/src/main/java/.../filter/AuthenticationFilter.java` |
-| Token Cache     | `api-gateway/src/main/java/.../service/AuthValidationService.java` |
-| Cache Config    | `api-gateway/src/main/java/.../config/CacheConfig.java`          |
-
-## API Endpoints
-
-All routes are prefixed with `/api/v1/`:
-
-| Method | Path                | Target Service | Auth Required |
-|--------|---------------------|----------------|---------------|
-| *      | `/api/v1/auth/**`   | Auth Service   | No            |
-| *      | `/api/v1/items/**`  | Items Service  | Yes           |
-
-> **Note:** All `/items/**` endpoints require authentication. See `AuthenticationFilter.java`.
-
-## Token Validation Caching
-
-Caches **token validation results** (not API responses) to avoid calling Auth service on every request:
-
-- **L1 (Caffeine):** Local in-memory, nanosecond access
-- **L2 (Redis):** Distributed across gateway instances
-
-Flow: L1 → L2 → Auth Service (on cache miss)
-
-Configuration: See `application.yml` under `gateway.cache` section.
-
-## Authentication Flow
-
-```
-1. Request arrives at Gateway
-2. AuthenticationFilter checks path
-3. If /auth/** → skip auth, forward directly
-4. If /items/** → require Authorization header
-5. Validate token (check L1 cache → L2 cache → Auth Service)
-6. If valid → add X-User-Id, X-Username headers → forward
-7. If invalid → 401 Unauthorized
-```
+| Auth filter     | `api-gateway/src/main/java/.../filter/AuthenticationFilter.java` |
+| Token cache     | `api-gateway/src/main/java/.../service/AuthValidationService.java` |
+| Cache config    | `api-gateway/src/main/java/.../config/CacheConfig.java`          |
+| Rate limiting   | `api-gateway/src/main/java/.../ratelimit/`                       |
 
 ## Running Locally
 
@@ -83,11 +82,5 @@ curl http://localhost:10000/actuator/health
 
 ## Common Issues
 
-### CORS Errors
-1. Check origin is in allowed list (see `application.yml`)
-2. Verify requests go through gateway, not direct to services
-3. Check browser network tab for actual error
-
-### Token Cache Not Working
-1. Verify Redis is running: `docker compose ps redis`
-2. Check Redis connectivity: `redis-cli ping`
+- **CORS errors**: Check allowed origins in `application.yml` and verify calls go through the gateway.
+- **Token cache misses**: Ensure Redis is up (`docker compose ps redis`, `redis-cli ping`).
