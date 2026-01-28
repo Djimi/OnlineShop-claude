@@ -30,6 +30,7 @@ The gateway exposes the following endpoints to clients:
 - **Bucket4j** - Rate limiting
 - **Resilience4j** - Circuit breakers, retries, and timeouts
 - **Micrometer** - Metrics collection with Prometheus export
+- **Lombok** - Compile-time annotations (provided scope)
 
 ## Project Structure
 
