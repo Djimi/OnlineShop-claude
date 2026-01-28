@@ -1,7 +1,7 @@
 # Core Principles
 
 **IMPORTANT:** The major goal of the project is to learn new technologies and architectural patterns, so use all opportunities to do that!
-See [PROJECTS_OVERVIEW.md](./CONCEPTS_TO_TRY.md) for examples (but don't limit to these only)
+See [CONCEPTS_TO_TRY.md](./CONCEPTS_TO_TRY.md) for examples (but don't limit to these only - always propose new ideas/technologies/patterns to try and we can fill them in the file).
 
 ## Development Philosophy
 
@@ -11,10 +11,13 @@ See [PROJECTS_OVERVIEW.md](./CONCEPTS_TO_TRY.md) for examples (but don't limit t
 4. **Latest Technologies** - When adding new technology you MUST search for and use the newest stable versions as of today (Java 25, Spring Boot 4, React 19, etc)
 which are compatible with the rest of the stack. When you fix a bug/issue you MUST always follow this - don't revert back to older versions.
 5. **Modern Java Features** - Virtual threads, enhanced switch, var, records, sealed classes
+6. The code MUST BE easily maintainable and extensible for future features
+7. The code MUST BE easy to be tested (unit, integration, e2e)
+8. DO NOT WRITE TESTS BY DEFAULT. Write tests only when explicitly requested.
 
 ## Code Quality Rules
 
-- **Test coverage:** >90% for unit tests (measured by JaCoCo)
+- **Test coverage:** >60% for unit tests (measured by JaCoCo)
 - **Comments:** Only for tricky logic, configs, corner cases. Never obvious comments like "// get the user"
 - **Corner cases:** Always handle DB/Redis/broker down scenarios
 - **Security:** Follow OWASP guidelines, never log sensitive data
@@ -28,10 +31,10 @@ Always strive for highly abstract and easily testable code.
 ## When Making Changes
 
 1. **Update all related files:** docker compose, tests, architecture docs, ADRs if needed
-2. **Run all tests:** Unit, integration, e2e before considering done
+2. **Run all tests:** Unit, integration, e2e before considering done. Refer to [TESTING_STRATEGY.md](./TESTING_STRATEGY.md)
 3. **E2E prerequisite:** Check if docker compose is running, start if not
 
-## Efficiency Guidelines for Claude
+## Efficiency Guidelines for agents:
 
 1. **Read before edit** - Always read files before modifying
 2. **Batch related changes** - Update all affected files together
@@ -43,6 +46,7 @@ Always strive for highly abstract and easily testable code.
 
 When explaining concepts:
 - Be practical with real code examples
+- Be concise and to the point
 - Go low-level with implementation details
 - Avoid vague or theoretical-only explanations
 - Cover edge cases and error scenarios

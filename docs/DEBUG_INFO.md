@@ -25,18 +25,18 @@ docker compose down -v
 
 # Apply code changes to a service (MUST build JAR first, then rebuild container)
 # Run from service directory (e.g., Items/, Auth/, api-gateway/, etc):
-./mvnw.cmd clean package -DskipTests
+./mvnw clean package -DskipTests
 # Then rebuild the Docker image:
 docker compose up -d --build <service-name>
 
 # Run unit + integration tests (from service directory)
-./mvnw.cmd clean test
+./mvnw clean test
 
 # Run application with local profile without docker containers.
-./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
 # Run e2e tests (from e2e-tests/, requires docker compose up first)
-cd e2e-tests && ./mvnw.cmd clean test
+cd e2e-tests && ./mvnw clean test
 
 # Frontend development
 cd frontend && npm run dev

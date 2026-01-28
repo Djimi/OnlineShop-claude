@@ -1,16 +1,24 @@
+# Concepts to Try
 
+## Architectural Patterns
+- SAGA
+- CQRS
+- Event sourcing
+- Transactional outbox
 
-SAGA
-CQRS
-Eventsourcing
-TransactionOutbox
+## Analytics
+- Create an analytics store (data warehouse solution)
 
-Create Analytics store (warehouse solution)
+## Features
+- OIDC with external provider
 
-JWT
+## DevOps
+- Git webhooks
+- Kubernetes deployment
+- Helm charts
+- AWS deployment
+- Deployment strategies (blue/green, canary, rolling)
 
-Domain driven design
-
-TDD 
-
-Test coverage
+## Low-Level Design
+- Domain-driven design (DDD)
+- Test-driven development (TDD)
