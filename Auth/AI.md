@@ -57,14 +57,5 @@ Auth/
 
 Main configuration: [src/main/resources/application.yml](./src/main/resources/application.yml)
 
-## Parent Documentation
-
-For project-wide guidelines, see the root [CLAUDE.md](../CLAUDE.md):
-- [Core Principles](../docs/CORE_PRINCIPLES.md) - Development philosophy, code quality rules
-- [API Design](../docs/API_DESIGN.md) - API standards, error handling
-- [Testing Strategy](../docs/TESTING_STRATEGY.md) - Testing requirements
-- [Git Workflow](../docs/GIT_WORKFLOW.md) - Branch naming, commit format
-
-## Known TODOs
-
-See [TODO.md](./TODO.md) for pending improvements.
+## Resilience & Caching
+- No caching implemented currently
