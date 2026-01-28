@@ -46,7 +46,14 @@ Auth/
 | POST | `/api/v1/auth/login` | User login |
 | GET | `/api/v1/auth/validate` | Validate session token |
 
+## Gateway Contract (Example)
 
+- Gateway proxies `/api/v1/auth/**` to this service with no auth required.
+
+Example:
+```bash
+curl http://localhost:10000/api/v1/auth/validate
+```
 
 ## Database
 
