@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.1</version>
+        <version>4.0.2</version>
         <relativePath/>
     </parent>
 
@@ -23,6 +23,8 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <bucket4j.version>8.16.0</bucket4j.version>
+        <resilience4j.version>2.3.0</resilience4j.version>
         <spring-cloud.version>2025.1.0</spring-cloud.version>
     </properties>
 
@@ -66,32 +68,32 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-all</artifactId>
-            <version>2.3.0</version>
+            <version>${resilience4j.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-spring-boot3</artifactId>
-            <version>2.3.0</version>
+            <version>${resilience4j.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
-            <version>2.3.0</version>
+            <version>${resilience4j.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-retry</artifactId>
-            <version>2.3.0</version>
+            <version>${resilience4j.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-timelimiter</artifactId>
-            <version>2.3.0</version>
+            <version>${resilience4j.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-ratelimiter</artifactId>
-            <version>2.3.0</version>
+            <version>${resilience4j.version}</version>
         </dependency>
 
         <!-- Micrometer Prometheus for metrics export -->
@@ -104,18 +106,18 @@
         <dependency>
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j_jdk17-core</artifactId>
-            <version>8.16.0</version>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j_jdk17-redis-common</artifactId>
-            <version>8.14.0</version>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
-    <groupId>com.bucket4j</groupId>
-    <artifactId>bucket4j_jdk17-lettuce</artifactId>
-    <version>8.14.0</version>
-</dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-lettuce</artifactId>
+            <version>${bucket4j.version}</version>
+        </dependency>
 
 
 
@@ -151,11 +153,6 @@
             <artifactId>mockserver-netty</artifactId>
             <version>5.15.0</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

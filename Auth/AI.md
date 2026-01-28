@@ -6,13 +6,13 @@
 
 ## Quick Reference
 
-| Property | Value |
-|----------|-------|
-| Port | 8081 |
-| Language | Java 25 |
-| Framework | Spring Boot 3.5 |
-| Database | PostgreSQL |
-| Build Tool | Maven |
+| Property | Value             |
+|----------|-------------------|
+| Port | 8081              |
+| Language | Java 25           |
+| Framework | Spring Boot 4.X.X |
+| Database | PostgreSQL        |
+| Build Tool | Maven             |
 
 ## Service Overview
 

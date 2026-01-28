@@ -11,7 +11,7 @@ The API Gateway is a Spring Cloud Gateway application that serves as the entry p
 
 ## Technology Stack
 
-- **Spring Boot 4.0.1** with Java 25
+- **Spring Boot 4.X.X** with Java 25
 - **Spring Cloud Gateway (Web MVC)** - Non-reactive, supports virtual threads
 - **RestClient** - Modern synchronous HTTP client (replaces RestTemplate)
 - **Caffeine** - L1 local in-memory cache
@@ -273,7 +273,7 @@ The gateway uses **RestClient** instead of the legacy **RestTemplate** for HTTP 
 **Migration rationale:**
 - **Deprecation**: RestTemplate is deprecated in Spring Framework 7.0, removal planned for 8.0
 - **Modern API**: RestClient offers a more fluent, readable interface
-- **Virtual threads optimized**: Built for Spring Boot 4.0.1 with Java 25 virtual threads
+- **Virtual threads optimized**: Built for Spring Boot 4.0.2 with Java 25 virtual threads
 - **No additional dependencies**: Works with JDK's native `HttpClient` (Java 11+)
 
 **API Comparison:**
