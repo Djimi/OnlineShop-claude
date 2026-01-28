@@ -113,3 +113,5 @@ properties
 Copy code
 logging.level.org.springframework.web=TRACE
 spring.mvc.log-request-details=true
+
+https://brandon.dimcheff.com/2018/02/rainbow-deploys-with-kubernetes/
