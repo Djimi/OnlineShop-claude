@@ -1,6 +1,6 @@
 ---
 name: java-dependency-upgrader
-description: Upgrade Java/Maven/Spring dependency and plugin versions across multi-module or multi-project Maven repositories. Use when asked to "upgrade all Java dependencies" or modernize dependency versions while enforcing Spring Boot/Cloud BOM usage, avoiding duplicates, running builds/tests, and validating the full docker-compose + e2e flow.
+description: Upgrade Java/Maven/Spring dependency and plugin versions across multi-module or multi-project Maven repositories. Use when asked to "upgrade depedencies" in Java projec. Modernize dependency versions while enforcing Spring Boot/Cloud BOM usage, avoiding duplicates, running builds/tests, and validating the full docker-compose + e2e flow.
 ---
 
 # Java Dependency Upgrader
