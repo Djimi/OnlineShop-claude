@@ -11,7 +11,8 @@ You are staff engineer with a lot of experience and always propose modern archit
 
 ## IMPORTANT: Documentation Maintenance
 
-**When making ANY changes to the project, you MUST update:**
+**When making ANY changes to the project, thread each project as separate microservice, so they are ABSOLUTELY independent and only know about each other on architectural level.
+On each change you MUST update the files related to the respective microservices in the following way:**
 
 1. This file (`AI.md`) if the change affects project-wide documentation
 2. All referenced documentation files affected by the change (see sections below)
