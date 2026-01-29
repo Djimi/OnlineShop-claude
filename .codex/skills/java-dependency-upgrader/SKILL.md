@@ -11,10 +11,11 @@ Upgrade all Maven dependency and plugin versions across immediate subprojects wi
 ## Workflow (sequential)
 
 ### 1) Discover projects
-- Start at repo root.
+- If calling argument mentions about specific folder use it as the root dir otherwise use current folder as root dir.
 - List only first-level subfolders.
 - Treat a folder as a Maven project when it contains `pom.xml`.
 - Keep a stable list of project paths and use those throughout the run.
+- List explicitly all projects that will be eventually upgraded
 
 ### 2) Build a single dependency + plugin inventory
 - Parse all `pom.xml` files (and relevant parent POMs) to collect:
