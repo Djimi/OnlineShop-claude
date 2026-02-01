@@ -1,1 +1,1 @@
-Refer to AI.md for all core instructions and global rules.
+Read AGENTS.md file

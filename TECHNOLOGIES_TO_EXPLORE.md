@@ -113,6 +113,8 @@ This document tracks technologies, architectural patterns, and testing approache
 
 ### Warehouse Analytics (Local + Scalable)
 
+**Ordering note (2026-01-31):** Items are sorted by current usage signals within their category: DB-Engines popularity for DBMS/engines, and GitHub stars for table formats/BI tools. Cross-category usage isn't directly comparable.
+
 #### ClickHouse
 - [ ] **Status:** Not started
 - **Description:** Columnar OLAP database optimized for large-scale analytics
@@ -131,15 +133,6 @@ This document tracks technologies, architectural patterns, and testing approache
   - Data exploration in notebooks/CLI
 - **Scaling Notes:** Single-process but can scale up with larger machines; great for local-first workflows.
 
-#### Apache Druid
-- [ ] **Status:** Not started
-- **Description:** Real-time analytics datastore with OLAP + streaming ingest
-- **Use Cases:**
-  - Sub-second analytics dashboards
-  - High-cardinality metrics
-  - Event-driven warehouse slices
-- **Scaling Notes:** Distributed architecture with segment replication; works locally with a single-node docker compose.
-
 #### Trino
 - [ ] **Status:** Not started
 - **Description:** Distributed SQL query engine for federated analytics
@@ -149,14 +142,23 @@ This document tracks technologies, architectural patterns, and testing approache
   - BI integration via ANSI SQL
 - **Scaling Notes:** Coordinator + workers model; scales horizontally from laptop to cluster.
 
-#### Apache Iceberg
+#### Apache Druid
 - [ ] **Status:** Not started
-- **Description:** Table format for huge analytic datasets (data lakehouse)
+- **Description:** Real-time analytics datastore with OLAP + streaming ingest
 - **Use Cases:**
-  - Manage Parquet data with ACID semantics
-  - Time travel and schema evolution
-  - Interop with Trino/Spark/Flink
-- **Scaling Notes:** Storage-agnostic; scales with object storage and compute engines.
+  - Sub-second analytics dashboards
+  - High-cardinality metrics
+  - Event-driven warehouse slices
+- **Scaling Notes:** Distributed architecture with segment replication; works locally with a single-node docker compose.
+
+#### Apache Pinot
+- [ ] **Status:** Not started
+- **Description:** Real-time OLAP datastore with low-latency queries
+- **Use Cases:**
+  - Interactive analytics dashboards
+  - Real-time aggregations on event streams
+  - User-facing analytics features
+- **Scaling Notes:** Distributed segments with replicas; supports single-node local runs.
 
 #### Delta Lake
 - [ ] **Status:** Not started
@@ -167,6 +169,15 @@ This document tracks technologies, architectural patterns, and testing approache
   - Time travel auditing
 - **Scaling Notes:** Scales with Spark compute; works locally via Spark + Delta.
 
+#### Apache Iceberg
+- [ ] **Status:** Not started
+- **Description:** Table format for huge analytic datasets (data lakehouse)
+- **Use Cases:**
+  - Manage Parquet data with ACID semantics
+  - Time travel and schema evolution
+  - Interop with Trino/Spark/Flink
+- **Scaling Notes:** Storage-agnostic; scales with object storage and compute engines.
+
 #### Apache Hudi
 - [ ] **Status:** Not started
 - **Description:** Incremental data lake management for upserts/deletes
@@ -175,15 +186,6 @@ This document tracks technologies, architectural patterns, and testing approache
   - Incremental warehouse refresh
   - Streaming + batch ingestion
 - **Scaling Notes:** Scales with Spark/Flink; can run locally in standalone mode.
-
-#### Apache Pinot
-- [ ] **Status:** Not started
-- **Description:** Real-time OLAP datastore with low-latency queries
-- **Use Cases:**
-  - Interactive analytics dashboards
-  - Real-time aggregations on event streams
-  - User-facing analytics features
-- **Scaling Notes:** Distributed segments with replicas; supports single-node local runs.
 
 #### Apache Superset
 - [ ] **Status:** Not started
