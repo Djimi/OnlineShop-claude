@@ -111,6 +111,98 @@ This document tracks technologies, architectural patterns, and testing approache
   - Faceted search (filters)
   - Analytics dashboards
 
+### Warehouse Analytics (Local + Scalable)
+
+#### ClickHouse
+- [ ] **Status:** Not started
+- **Description:** Columnar OLAP database optimized for large-scale analytics
+- **Use Cases:**
+  - Warehouse analytics on events/orders
+  - Fast aggregation for dashboards
+  - Materialized views for rollups
+- **Scaling Notes:** Scales from single-node laptop to multi-shard clusters; native replication/sharding.
+
+#### DuckDB
+- [ ] **Status:** Not started
+- **Description:** Embedded analytical database for fast local analytics
+- **Use Cases:**
+  - Local data warehouse prototyping
+  - SQL analytics over Parquet/CSV
+  - Data exploration in notebooks/CLI
+- **Scaling Notes:** Single-process but can scale up with larger machines; great for local-first workflows.
+
+#### Apache Druid
+- [ ] **Status:** Not started
+- **Description:** Real-time analytics datastore with OLAP + streaming ingest
+- **Use Cases:**
+  - Sub-second analytics dashboards
+  - High-cardinality metrics
+  - Event-driven warehouse slices
+- **Scaling Notes:** Distributed architecture with segment replication; works locally with a single-node docker compose.
+
+#### Trino
+- [ ] **Status:** Not started
+- **Description:** Distributed SQL query engine for federated analytics
+- **Use Cases:**
+  - Query data across multiple sources (S3, Postgres, Kafka)
+  - Warehouse-style analytics without moving data
+  - BI integration via ANSI SQL
+- **Scaling Notes:** Coordinator + workers model; scales horizontally from laptop to cluster.
+
+#### Apache Iceberg
+- [ ] **Status:** Not started
+- **Description:** Table format for huge analytic datasets (data lakehouse)
+- **Use Cases:**
+  - Manage Parquet data with ACID semantics
+  - Time travel and schema evolution
+  - Interop with Trino/Spark/Flink
+- **Scaling Notes:** Storage-agnostic; scales with object storage and compute engines.
+
+#### Delta Lake
+- [ ] **Status:** Not started
+- **Description:** ACID table layer on top of Parquet for lakehouse workloads
+- **Use Cases:**
+  - Reliable ETL pipelines with ACID guarantees
+  - Batch + streaming warehouse pipelines
+  - Time travel auditing
+- **Scaling Notes:** Scales with Spark compute; works locally via Spark + Delta.
+
+#### Apache Hudi
+- [ ] **Status:** Not started
+- **Description:** Incremental data lake management for upserts/deletes
+- **Use Cases:**
+  - Change data capture into lakehouse tables
+  - Incremental warehouse refresh
+  - Streaming + batch ingestion
+- **Scaling Notes:** Scales with Spark/Flink; can run locally in standalone mode.
+
+#### Apache Pinot
+- [ ] **Status:** Not started
+- **Description:** Real-time OLAP datastore with low-latency queries
+- **Use Cases:**
+  - Interactive analytics dashboards
+  - Real-time aggregations on event streams
+  - User-facing analytics features
+- **Scaling Notes:** Distributed segments with replicas; supports single-node local runs.
+
+#### Apache Superset
+- [ ] **Status:** Not started
+- **Description:** Open-source BI and visualization platform
+- **Use Cases:**
+  - Warehouse dashboards and KPI monitoring
+  - Self-serve analytics for teams
+  - Explore datasets from ClickHouse/Trino/Druid
+- **Scaling Notes:** Stateless web app backed by metadata DB; scales with standard web deployments.
+
+#### Metabase
+- [ ] **Status:** Not started
+- **Description:** Open-source analytics and dashboarding tool
+- **Use Cases:**
+  - Quick local dashboards for warehouse data
+  - SQL + UI-based analytics exploration
+  - Embedded analytics for product use
+- **Scaling Notes:** Single-jar local run; scales via containerized deployment.
+
 ### Observability
 
 #### Distributed Tracing (Micrometer + Zipkin/Jaeger)
