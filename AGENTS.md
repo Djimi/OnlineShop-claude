@@ -28,7 +28,7 @@ When using Maven commands you MUST use the Maven wrapper inside the project you 
 
 ## Quick Reference
 
-See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) for:
+See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) (always read that file!) for:
 - Main idea of the project
 - Services & Ports table
 
@@ -79,7 +79,7 @@ When building a **single project**, first build all its transitive dependencies:
 
 ## Core Principles
 
-See [docs/CORE_PRINCIPLES.md](./docs/CORE_PRINCIPLES.md) for:
+See [docs/CORE_PRINCIPLES.md](./docs/CORE_PRINCIPLES.md) for (always read that file!):
 - Development philosophy (High Abstraction, Latest Technologies)
 - Code quality rules (testing coverage, comments policy, security)
 - Design patterns guidance
@@ -112,6 +112,7 @@ See [docs/API_DESIGN.md](./docs/API_DESIGN.md) for:
 - Error handling (RFC 9457 Problem Details)
 - Observability and metrics standards (tag-based dimensional metrics)
 - Logging standards
+- Gateway exception: public, unversioned info endpoints (e.g., `/api/product-info`) when no service owns the data
 
 ## Style Guides (Condensed)
 

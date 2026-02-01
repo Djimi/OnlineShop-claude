@@ -15,6 +15,7 @@ The API Gateway is the entry point to OnlineShop services. It routes traffic, en
 
 - **Routing**: `/api/v1/auth/**` → Auth, `/api/v1/items/**` → Items.
 - **Authentication**: Bearer token required for `/api/v1/items/**`.
+- **Public info endpoint**: `/api/product-info` → static product info (no auth, no downstream call).
 - **Token caching**: L1 Caffeine + L2 Redis for validation results.
 - **Rate limiting**: Bucket4j + Redis.
 - **Resilience/observability**: Resilience4j + Micrometer/Prometheus.
@@ -22,6 +23,7 @@ The API Gateway is the entry point to OnlineShop services. It routes traffic, en
 ## Contracts (Examples)
 
 - Public: `/api/v1/auth/**`
+- Public: `/api/product-info` (static info endpoint; unversioned by design)
 - Protected: `/api/v1/items/**`
 
 Example:
@@ -84,3 +86,4 @@ api-gateway/
 
 - Service boots even if Redis is down (cache is optional).
 - Cached tokens continue to work during Auth outages; uncached tokens fail fast.
+- Rate limiting can be disabled via `gateway.ratelimit.enabled=false` (useful for tests).

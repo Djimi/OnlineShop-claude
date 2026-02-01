@@ -1,0 +1,9 @@
+I need to have endpoint in api-gateway which returns info for my product.
+
+- the name should be "product-info"
+- the information returnes must be
+
+
+{
+    "description": "This is a test product for learning"
+}
