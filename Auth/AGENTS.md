@@ -66,6 +66,3 @@ Main configuration: [src/main/resources/application.yml](./src/main/resources/ap
 
 ## Resilience & Caching
 - No caching implemented currently
-
-## Documentation Sync
-- Last sync: 2026-02-01 (Gateway added `/api/product-info` and rate limit test toggle; no Auth changes required)

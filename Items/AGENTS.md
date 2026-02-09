@@ -49,6 +49,3 @@ Items/
 ## Configuration
 
 Main configuration: [src/main/resources/application.yml](./src/main/resources/application.yml)
-
-## Documentation Sync
-- Last sync: 2026-02-01 (Gateway added `/api/product-info` and rate limit test toggle; Items unchanged)

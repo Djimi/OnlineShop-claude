@@ -10,13 +10,13 @@ import com.onlineshop.auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HexFormat;
 
 @Service
 public class AuthService {
@@ -39,7 +39,6 @@ public class AuthService {
         this.sessionExpirationSeconds = sessionExpirationSeconds;
     }
 
-    @Transactional
     public RegisterResponse register(RegisterRequest request) {
         String normalizedUsername = request.getUsername().toLowerCase();
         if (userRepository.existsByNormalizedUsername(normalizedUsername)) {
@@ -57,7 +56,6 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
     public LoginResponse login(LoginRequest request) {
         String normalizedUsername = request.getUsername().toLowerCase();
         User user = userRepository.findByNormalizedUsername(normalizedUsername)
@@ -90,23 +88,23 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
     public ValidateResponse validateToken(String token) {
         String tokenHash = hashToken(token);
-        Session session = sessionRepository.findByTokenHash(tokenHash)
+        Instant now = clock.instant();
+        SessionRepository.SessionValidationProjection session = sessionRepository
+                .findValidationProjectionByTokenHash(tokenHash)
                 .orElse(null);
 
-        if (session == null || !session.isValid(clock.instant())) {
+        if (session == null || now.isAfter(session.getExpiresAt())) {
             return ValidateResponse.builder()
                     .valid(false)
                     .build();
         }
 
-        User user = session.getUser();
         return ValidateResponse.builder()
                 .valid(true)
-                .userId(user.getId())
-                .username(user.getUsername())
+                .userId(session.getUserId())
+                .username(session.getUsername())
                 .createdAt(session.getCreatedAt())
                 .expiresAt(session.getExpiresAt())
                 .build();
@@ -115,24 +113,17 @@ public class AuthService {
     private String generateToken() {
         byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
+        return HexFormat.of().formatHex(bytes);
     }
 
     private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(token.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
+            return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not available", e);
         }
     }
+
 }

@@ -32,11 +32,12 @@ services:
     # Performance tuning for PostgreSQL
     command: >
       postgres
-      -c shared_buffers=256MB
-      -c effective_cache_size=768MB
-      -c maintenance_work_mem=64MB
+      -c shared_buffers=1024MB
+      -c effective_cache_size=3GB
+      -c maintenance_work_mem=256MB
       -c checkpoint_completion_target=0.9
-      -c max_connections=200
+      -c work_mem=16MB
+      -c max_connections=600
 
   # ==================== AUTH SERVICE ====================
   auth-service:
@@ -52,8 +53,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: authpassword
       # Performance tuning
       JAVA_OPTS: >
-        -Xms512m
-        -Xmx512m
+        -Xms2g
+        -Xmx16g
         -XX:+UseZGC
         -XX:+ZGenerational
     depends_on:
@@ -70,11 +71,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 1G
+          cpus: '12'
+          memory: 32G
         reservations:
-          cpus: '1'
-          memory: 512M
+          cpus: '4'
+          memory: 4G
 
   # ==================== K6 LOAD TESTING ====================
   k6:

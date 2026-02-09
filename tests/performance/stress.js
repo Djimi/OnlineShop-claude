@@ -44,6 +44,7 @@ import {
 } from './utils/metrics.js';
 
 const BASE_URL = getAuthServiceUrl();
+const EARLY_ABORT = __ENV.EARLY_ABORT === 'true';
 
 // Traffic distribution
 const TRAFFIC_MIX = {
@@ -53,6 +54,7 @@ const TRAFFIC_MIX = {
 };
 
 export const options = {
+    setupTimeout: '10m',
     scenarios: {
         stress_test: {
             executor: 'ramping-vus',
@@ -88,7 +90,22 @@ export const options = {
             gracefulRampDown: '1m',
         },
     },
-    thresholds: generateStressThresholds(),
+    thresholds: EARLY_ABORT ? {
+        ...generateStressThresholds(),
+        // Stop early when stress behavior is clearly beyond acceptable bounds.
+        'http_req_duration{operation:validate}': [
+            { threshold: 'p(95)<2500', abortOnFail: true, delayAbortEval: '4m' },
+        ],
+        'http_req_failed{operation:validate}': [
+            { threshold: 'rate<0.30', abortOnFail: true, delayAbortEval: '4m' },
+        ],
+        'http_req_duration{operation:login}': [
+            { threshold: 'p(95)<4000', abortOnFail: true, delayAbortEval: '4m' },
+        ],
+        'http_req_duration{operation:register}': [
+            { threshold: 'p(95)<4000', abortOnFail: true, delayAbortEval: '4m' },
+        ],
+    } : generateStressThresholds(),
 };
 
 // VU-local token cache
@@ -107,6 +124,7 @@ export function setup() {
     console.log('  Phase 5-6: Stress level (200 VUs)');
     console.log('  Phase 7-8: Extreme load (300 VUs)');
     console.log('  Phase 9:   Recovery');
+    console.log(`  Early abort: ${EARLY_ABORT ? 'enabled' : 'disabled'}`);
     console.log('');
 
     // Create test users

@@ -15,6 +15,16 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
 
     Optional<Session> findByTokenHash(String tokenHash);
 
+    @Query("SELECT s FROM Session s JOIN FETCH s.user WHERE s.tokenHash = :tokenHash")
+    Optional<Session> findByTokenHashWithUser(@Param("tokenHash") String tokenHash);
+
+    @Query("""
+            SELECT s.user.id AS userId, s.user.username AS username, s.createdAt AS createdAt, s.expiresAt AS expiresAt
+            FROM Session s
+            WHERE s.tokenHash = :tokenHash
+            """)
+    Optional<SessionValidationProjection> findValidationProjectionByTokenHash(@Param("tokenHash") String tokenHash);
+
     @Modifying
     @Query("DELETE FROM Session s WHERE s.expiresAt < :now")
     void deleteExpiredSessions(@Param("now") Instant now);
@@ -22,4 +32,11 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     @Modifying
     @Query("DELETE FROM Session s WHERE s.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    interface SessionValidationProjection {
+        Long getUserId();
+        String getUsername();
+        Instant getCreatedAt();
+        Instant getExpiresAt();
+    }
 }
