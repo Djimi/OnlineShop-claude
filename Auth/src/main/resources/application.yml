@@ -19,8 +19,8 @@ spring:
     password: authpassword
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 80
-      minimum-idle: 80
+      maximum-pool-size: 10
+      minimum-idle: 10
       connection-timeout: 2000
       pool-name: authPool
 
@@ -87,13 +87,16 @@ logging:
     org.hibernate.stat.internal.StatisticsImpl: WARN
     org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [requestId=%X{requestId}] - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [requestId=%X{requestId}] [%level] [%logger{48}] - %msg%n"
 
 ---
 spring:
   config:
     activate:
-      on-profile: hibernate-troubleshooting
+      on-profile: db-troubleshooting
+  datasource:
+    hikari:
+      register-mbeans: true
   jpa:
     properties:
       hibernate:
@@ -112,3 +115,8 @@ logging:
     org.hibernate.stat: DEBUG
     org.hibernate.stat.internal.StatisticsImpl: DEBUG
     org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: DEBUG
+    com.zaxxer.hikari: TRACE
+    com.zaxxer.hikari.HikariConfig: TRACE
+    com.zaxxer.hikari.HikariDataSource: TRACE
+    com.zaxxer.hikari.pool.HikariPool: TRACE
+    com.zaxxer.hikari.pool.PoolBase: TRACE
