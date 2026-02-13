@@ -80,12 +80,19 @@ Optional slow-query threshold (milliseconds):
 --auth.troubleshooting.hibernate.slow-query-threshold-ms=100
 ```
 
+Optional datasource acquire threshold for warning logs (milliseconds):
+
+```bash
+--auth.troubleshooting.datasource.acquire-slow-threshold-ms=2
+```
+
 When the `db-troubleshooting` profile is active, the service enables:
 - Hibernate statistics generation
 - Hibernate session event logging
 - Slow query logging (`LOG_QUERIES_SLOWER_THAN_MS`)
 - Verbose Hibernate SQL/statistics log levels
 - Hikari internal pool diagnostics (`com.zaxxer.hikari.*` at `TRACE`)
+- Datasource acquisition timing logs with pool state (`active/idle/waiting/total`) and sub-millisecond precision
 - Console logs include log level and logger name for faster troubleshooting
 
 To disable diagnostics, start the service without the profile argument.

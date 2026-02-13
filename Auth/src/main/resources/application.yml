@@ -120,3 +120,9 @@ logging:
     com.zaxxer.hikari.HikariDataSource: TRACE
     com.zaxxer.hikari.pool.HikariPool: TRACE
     com.zaxxer.hikari.pool.PoolBase: TRACE
+    com.onlineshop.auth.config.datasource: DEBUG
+
+auth:
+  troubleshooting:
+    datasource:
+      acquire-slow-threshold-ms: 0
