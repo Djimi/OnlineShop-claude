@@ -64,5 +64,29 @@ curl http://localhost:10000/api/v1/auth/validate
 
 Main configuration: [src/main/resources/application.yml](./src/main/resources/application.yml)
 
+### Hibernate Troubleshooting Toggle
+
+Hibernate query diagnostics are now disabled by default.
+
+Enable diagnostics with one startup argument:
+
+```bash
+--spring.profiles.active=hibernate-troubleshooting
+```
+
+Optional slow-query threshold (milliseconds):
+
+```bash
+--auth.troubleshooting.hibernate.slow-query-threshold-ms=100
+```
+
+When the `hibernate-troubleshooting` profile is active, the service enables:
+- Hibernate statistics generation
+- Hibernate session event logging
+- Slow query logging (`LOG_QUERIES_SLOWER_THAN_MS`)
+- Verbose Hibernate SQL/statistics log levels
+
+To disable diagnostics, start the service without the profile argument.
+
 ## Resilience & Caching
 - No caching implemented currently

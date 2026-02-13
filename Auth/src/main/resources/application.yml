@@ -33,11 +33,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        generate_statistics: true
+        generate_statistics: false
         session:
           events:
-            log: true
-            # LOG_QUERIES_SLOWER_THAN_MS: 100
+            log: false
 
 session:
   expiration: 3600
@@ -80,11 +79,36 @@ logging:
   level:
     com.onlineshop.auth: INFO
     org.springframework.web: TRACE
+    org.hibernate.SQL: WARN
+    org.hibernate.SQL_SLOW: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.hibernate.session.metrics: WARN
+    org.hibernate.stat: WARN
+    org.hibernate.stat.internal.StatisticsImpl: WARN
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [requestId=%X{requestId}] - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: hibernate-troubleshooting
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+        session:
+          events:
+            log: true
+            LOG_QUERIES_SLOWER_THAN_MS: ${auth.troubleshooting.hibernate.slow-query-threshold-ms:100}
+
+logging:
+  level:
     org.hibernate.SQL: DEBUG
+    org.hibernate.SQL_SLOW: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.hibernate.session.metrics: DEBUG
     org.hibernate.stat: DEBUG
     org.hibernate.stat.internal.StatisticsImpl: DEBUG
     org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [requestId=%X{requestId}] - %msg%n"
