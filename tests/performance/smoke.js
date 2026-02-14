@@ -11,8 +11,8 @@
  * - Lenient thresholds
  *
  * Usage:
- *   k6 run smoke.js
- *   k6 run -e ENV=docker smoke.js
+ *   k6 run smoke-1vu.js
+ *   k6 run -e ENV=docker smoke-1vu.js
  */
 
 import { group, sleep } from 'k6';
@@ -25,7 +25,7 @@ import {
     register,
     extractToken,
     checkLoginResponse,
-    checkValidateResponse,
+    checkValidateResponseWithExpectedValidity,
     checkRegisterResponse,
     generateUniqueUsername,
 } from './utils/helpers.js';
@@ -36,6 +36,12 @@ import {
 } from './utils/metrics.js';
 
 const BASE_URL = getAuthServiceUrl();
+const SEEDED_USER_COUNT = 7;
+
+// VU-local state initialized from setup data on first iteration
+let seededUsers = [];
+let tokenPool = [];
+let seedInitialized = false;
 
 export const options = {
     vus: 1,
@@ -43,7 +49,7 @@ export const options = {
     thresholds: generateSmokeThresholds(),
 };
 
-// Setup: Ensure we have a test user (runs once before VU code)
+// Setup: Prepare seeded users and tokens once before VU code.
 export function setup() {
     console.log('='.repeat(60));
     console.log('SMOKE TEST - Auth Service');
@@ -51,38 +57,61 @@ export function setup() {
     console.log(`Target: ${BASE_URL}`);
     console.log('');
 
-    // Create a test user for login tests with unique username
-    // Format: testUser_<ISO8601-date>_<vu-id>
-    const timestamp = new Date().toISOString().split('.')[0]; // ISO 8601: YYYY-MM-DDTHH:MM:SS
-    const vuId = exec.vu.idInTest;
+    const seedRunId = Date.now();
+    const users = [];
+    const validTokens = [];
 
-    const testUser = {
-        username: `testUser_${timestamp}_${vuId}`,
-        password: 'SmokeTest123!',
-    };
+    for (let i = 0; i < SEEDED_USER_COUNT; i++) {
+        const user = {
+            username: `smoke_seed_${seedRunId}_${i + 1}`,
+            password: 'SmokeTest123!',
+        };
 
-    // Try to register the test user (should not already exist due to unique username)
-    const registerRes = register(BASE_URL, testUser.username, testUser.password);
-    if (registerRes.status === 201) {
-        console.log(`Created test user: ${testUser.username}`);
-    } else {
-        throw new Error(`Failed to create test user: ${registerRes.status} - ${registerRes.body}`);
+        const registerRes = register(BASE_URL, user.username, user.password);
+        if (registerRes.status !== 201 && registerRes.status !== 409) {
+            throw new Error(`Failed to create seed user ${user.username}: ${registerRes.status} - ${registerRes.body}`);
+        }
+
+        const loginRes = login(BASE_URL, user.username, user.password);
+        const loginSuccess = checkLoginResponse(loginRes, 'setup_seed_login', { operation: 'login_setup' });
+        const token = loginSuccess ? extractToken(loginRes) : null;
+        if (!token) {
+            throw new Error(`Failed to create seed token for user ${user.username}: ${loginRes.status} - ${loginRes.body}`);
+        }
+
+        users.push(user);
+        validTokens.push(token);
     }
 
-    return { testUser };
+    console.log(`Prepared ${users.length} seed users with valid tokens for smoke validate flow`);
+    return { users, validTokens };
 }
 
 export default function (data) {
-    const { testUser } = data;
     const vuid = exec.vu.idInTest;
     const iter = exec.vu.iterationInInstance;
 
+    if (!seedInitialized) {
+        seededUsers = data.users;
+        tokenPool = data.validTokens.slice();
+        seedInitialized = true;
+    }
+
+    const loginUserIndex = iter % seededUsers.length;
+    const loginUser = seededUsers[loginUserIndex];
+
     // 1 Login
     group('Login Flow', function () {
-        const loginRes = login(BASE_URL, testUser.username, testUser.password);
+        const loginRes = login(BASE_URL, loginUser.username, loginUser.password);
         const loginSuccess = checkLoginResponse(loginRes);
+        const refreshedToken = loginSuccess ? extractToken(loginRes) : null;
 
         recordLoginMetrics(loginRes, loginSuccess, { vuid: vuid });
+
+        // Keep one token per seeded user so validate calls use distinct valid tokens.
+        if (refreshedToken) {
+            tokenPool[loginUserIndex] = refreshedToken;
+        }
 
         if (loginSuccess) {
             console.log(`[VU ${vuid}, Iter ${iter}] Login successful (${loginRes.timings.duration.toFixed(0)}ms)`);
@@ -106,30 +135,40 @@ export default function (data) {
         }
     });
 
-    // 8 Validates
-    for (let i = 0; i < 8; i++) {
+    const invalidToken = `invalid_smoke_token_${Date.now()}_${iter}_${Math.random().toString(36).substring(2, 10)}`;
+    const validationPlan = tokenPool.map((token, index) => ({
+        token: token,
+        expectedValid: true,
+        label: `Validate Valid Token ${index + 1}`,
+    }));
+    validationPlan.push({
+        token: invalidToken,
+        expectedValid: false,
+        label: 'Validate Invalid Token',
+    });
+
+    // 8 Validates total: 7 valid tokens + 1 invalid token
+    for (let i = 0; i < validationPlan.length; i++) {
+        const plan = validationPlan[i];
         group(`Validate Flow ${i + 1}`, function () {
-            const loginRes = login(BASE_URL, testUser.username, testUser.password);
-            const token = extractToken(loginRes);
+            const validateRes = validateToken(BASE_URL, plan.token);
+            const validateSuccess = checkValidateResponseWithExpectedValidity(
+                validateRes,
+                plan.expectedValid,
+                plan.expectedValid ? 'smoke_validate_valid' : 'smoke_validate_invalid_expected_false',
+                plan.expectedValid ? { operation: 'validate' } : { operation: 'validate_invalid' }
+            );
 
-            if (token) {
-                const validateRes = validateToken(BASE_URL, token);
-                const validateSuccess = checkValidateResponse(validateRes);
+            recordValidateMetrics(
+                validateRes,
+                validateSuccess,
+                { vuid: vuid, expected_valid: String(plan.expectedValid) }
+            );
 
-                recordValidateMetrics(validateRes, validateSuccess, { vuid: vuid });
-
-                if (validateSuccess) {
-                    console.log(`[VU ${vuid}, Iter ${iter}] Validate successful (${validateRes.timings.duration.toFixed(0)}ms)`);
-                } else {
-                    console.error(`[VU ${vuid}, Iter ${iter}] Validate failed: ${validateRes.status}`);
-                }
+            if (validateSuccess) {
+                console.log(`[VU ${vuid}, Iter ${iter}] ${plan.label} successful (${validateRes.timings.duration.toFixed(0)}ms)`);
             } else {
-                console.error(`[VU ${vuid}, Iter ${iter}] Could not get token for validate test`);
-                recordValidateMetrics(
-                    { timings: { duration: 0 }, status: 0 },
-                    false,
-                    { vuid: vuid, error: 'no_token' }
-                );
+                console.error(`[VU ${vuid}, Iter ${iter}] ${plan.label} failed: ${validateRes.status} - ${validateRes.body}`);
             }
         });
     }

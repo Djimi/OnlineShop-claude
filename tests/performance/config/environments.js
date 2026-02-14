@@ -1,8 +1,8 @@
 /**
  * Environment Configuration for Performance Tests
  *
- * Usage: k6 run -e ENV=local smoke.js
- *        k6 run -e ENV=staging smoke.js
+ * Usage: k6 run -e ENV=local smoke-1vu.js
+ *        k6 run -e ENV=staging smoke-1vu.js
  */
 
 export const ENVIRONMENTS = {
@@ -44,3 +44,4 @@ export function getAuthServiceUrl() {
     const env = getEnvironment();
     return env.authServiceUrl;
 }
+

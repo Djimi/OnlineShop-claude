@@ -198,7 +198,8 @@ function performValidate(testUser) {
 
         recordValidateMetrics(res, success);
 
-        if (!success && res.status === 401) {
+        // Clear cache on any validation mismatch (API can return 200 with valid=false).
+        if (!success) {
             cachedToken = null;
             cachedTokenExpiry = 0;
         }

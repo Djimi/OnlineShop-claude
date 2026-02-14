@@ -5,7 +5,7 @@
 #
 # Usage:
 #   docker compose -f docker-compose.perf.yml up -d
-#   k6 run tests/performance/smoke.js
+#   k6 run tests/performance/smoke-1vu.js
 #   docker compose -f docker-compose.perf.yml down
 
 services:
@@ -103,3 +103,4 @@ networks:
 
 volumes:
   perf-auth-postgres-data:
+

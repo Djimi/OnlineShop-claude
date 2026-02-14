@@ -143,8 +143,37 @@ export function checkLoginResponse(response, context = 'login', tags = { operati
  * @returns {boolean} - Whether all checks passed
  */
 export function checkValidateResponse(response, context = 'validate', tags = { operation: 'validate' }) {
+    return checkValidateResponseWithExpectedValidity(response, true, context, tags);
+}
+
+/**
+ * Check validate response with expected validity value
+ *
+ * @param {object} response - The HTTP response
+ * @param {boolean} expectedValid - Expected value of response body field "valid"
+ * @param {string} context - Context string for check messages
+ * @param {object} tags - Tags for the check (for threshold filtering)
+ * @returns {boolean} - Whether all checks passed
+ */
+export function checkValidateResponseWithExpectedValidity(
+    response,
+    expectedValid,
+    context = 'validate',
+    tags = { operation: 'validate' }
+) {
     return check(response, {
-        [context]: (r) => r.status === 200,
+        [context]: (r) => {
+            if (r.status !== 200) {
+                return false;
+            }
+
+            try {
+                const body = JSON.parse(r.body);
+                return body.valid === expectedValid;
+            } catch {
+                return false;
+            }
+        },
     }, tags);
 }
 

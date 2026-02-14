@@ -424,7 +424,7 @@ Database:
 K6 Load Testing:
   - Container: grafana/k6:latest
   - Network: Isolated performance network
-  - Test scripts: smoke.js, stress.js
+  - Test scripts: smoke-1vu.js, stress.js
 ```
 
 ### Files Generated
@@ -480,3 +480,4 @@ K6 Load Testing:
 **Environment:** Docker Compose with performance tuning enabled
 **k6 Version:** grafana/k6:latest
 **Auth Service Version:** 1.0.0 (Spring Boot 4)
+

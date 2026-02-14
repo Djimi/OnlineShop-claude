@@ -99,3 +99,11 @@ To disable diagnostics, start the service without the profile argument.
 
 ## Resilience & Caching
 - No caching implemented currently
+
+## Performance Test Notes
+- Smoke performance test (`tests/performance/smoke-1vu.js`) uses 7 seeded users created in setup.
+- Each smoke iteration keeps a fixed `1:1:8` operation ratio:
+- 1 register, 1 login, 8 validate.
+- Validate flow is `7` requests with distinct valid tokens and `1` request with an invalid token.
+- Invalid-token validate is expected to return HTTP `200` with response field `valid=false`.
+
