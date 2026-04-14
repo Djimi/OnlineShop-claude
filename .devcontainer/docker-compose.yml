@@ -44,6 +44,10 @@ services:
       # Persist Claude Code credentials, memory, and settings.
       # On Windows the host path resolves via Docker Desktop's WSL2 backend.
       - ${USERPROFILE:-${HOME}}/.claude:/home/vscode/.claude
+      # ~/.claude.json holds the OAuth session token and initial-setup flags.
+      # Without this mount it lives only on the container's writable layer and
+      # is lost on every rebuild, triggering the full auth wizard again.
+      - ${USERPROFILE:-${HOME}}/.claude.json:/home/vscode/.claude.json
       # NOTE: the host Docker socket is intentionally NOT mounted. Mounting
       # /var/run/docker.sock would give any process inside the container
       # (including an autonomous agent in yolo mode) effective root on the

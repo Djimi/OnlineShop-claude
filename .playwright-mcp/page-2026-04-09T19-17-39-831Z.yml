@@ -1,9 +1,0 @@
-- navigation [ref=e4]:
-  - generic [ref=e6]:
-    - link "OnlineShop" [ref=e7] [cursor=pointer]:
-      - /url: /
-      - img [ref=e8]
-      - generic [ref=e11]: OnlineShop
-    - generic [ref=e12]:
-      - button "Login" [ref=e13]
-      - button "Register" [ref=e14]
