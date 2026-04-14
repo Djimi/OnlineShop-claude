@@ -30,6 +30,8 @@ fi
 echo "[post-create] Fixing ownership on named volumes..."
 sudo chown -R vscode:vscode /home/vscode/.m2 || true
 sudo chown -R vscode:vscode /workspaces/OnlineShop-claude/frontend/node_modules || true
+sudo mkdir -p /home/vscode/.cache/ms-playwright
+sudo chown -R vscode:vscode /home/vscode/.cache || true
 
 # ---------------------------------------------------------------------------
 # Install Claude Code CLI via nvm-managed npm (no sudo).
@@ -46,6 +48,46 @@ if ! command -v claude >/dev/null 2>&1; then
   }
 else
   echo "[post-create] claude CLI already installed: $(claude --version 2>/dev/null || echo 'unknown')"
+fi
+
+# ---------------------------------------------------------------------------
+# Install Playwright (npm package + chromium binary + OS deps).
+#
+# We want zero manual steps: on a fresh container rebuild Playwright must
+# Just Work. That means we need to guarantee the frontend's node_modules
+# contains the `playwright` package before running `playwright install`.
+#
+# If the playwright binary is missing (typical first rebuild: the
+# onlineshop-frontend-node-modules volume is empty), run `npm install` in
+# the frontend. This is the same command the user would run manually, just
+# invoked automatically.
+#
+# Browsers are persisted in the onlineshop-playwright-browsers named volume
+# (mounted at ~/.cache/ms-playwright). After the first successful install
+# the chromium download is a no-op on subsequent rebuilds.
+# ---------------------------------------------------------------------------
+echo "[post-create] Ensuring Playwright is installed..."
+PLAYWRIGHT_BIN="/workspaces/OnlineShop-claude/frontend/node_modules/.bin/playwright"
+
+if [ ! -x "$PLAYWRIGHT_BIN" ]; then
+  echo "[post-create] frontend/node_modules missing playwright — running 'npm install'..."
+  (cd /workspaces/OnlineShop-claude/frontend && npm install) || \
+    echo "[post-create] WARN: npm install in frontend failed"
+fi
+
+if [ -x "$PLAYWRIGHT_BIN" ]; then
+  if [ -z "$(ls -A /home/vscode/.cache/ms-playwright 2>/dev/null | grep -E '^chromium' || true)" ]; then
+    # `sudo` resets PATH so nvm's node isn't found — forward PATH explicitly.
+    sudo env "PATH=$PATH" "$PLAYWRIGHT_BIN" install-deps chromium || \
+      echo "[post-create] WARN: playwright install-deps failed"
+    "$PLAYWRIGHT_BIN" install chromium || \
+      echo "[post-create] WARN: playwright install failed"
+    sudo chown -R vscode:vscode /home/vscode/.cache/ms-playwright || true
+  else
+    echo "[post-create] Playwright browsers already present — skipping download."
+  fi
+else
+  echo "[post-create] WARN: Playwright binary still missing after npm install."
 fi
 
 echo "[post-create] Ensuring mvnw is executable..."

@@ -41,6 +41,9 @@ services:
       # Persist Maven cache across rebuilds (cold start without this is ~5 min).
       # NOTE: first mount is root-owned; post-create.sh chowns it to vscode.
       - onlineshop-m2:/home/vscode/.m2
+      # Persist Playwright browser binaries (~300MB chromium/firefox/webkit).
+      # Without this, `npx playwright install` has to re-download on every rebuild.
+      - onlineshop-playwright-browsers:/home/vscode/.cache/ms-playwright
       # Persist Claude Code credentials, memory, and settings.
       # On Windows the host path resolves via Docker Desktop's WSL2 backend.
       - ${USERPROFILE:-${HOME}}/.claude:/home/vscode/.claude
@@ -71,3 +74,4 @@ services:
 volumes:
   onlineshop-m2:
   onlineshop-frontend-node-modules:
+  onlineshop-playwright-browsers:
