@@ -10,9 +10,24 @@ A VS Code Dev Container that lets you run **all** OnlineShop services from sourc
 
 **Open the project inside the container:**
 1. Open the repo root in VS Code: `File` → `Open Folder` → `D:\CodingProjects\OnlineShop-claude`.
-2. `Ctrl+Shift+P` → **Dev Containers: Reopen in Container**.
-3. First build takes ~5–10 min (image pull, JDK 25 install, Maven dependency pre-warm). Subsequent reopens take seconds.
-4. When VS Code finishes attaching, you'll see `OnlineShop Workspace` in the lower-left status bar.
+2. **Stop any previously running compose stack** from the root: `docker compose down` in PowerShell. (The root `docker-compose.yml` maps the same ports as the devcontainer — e.g., port 10000 for api-gateway — so leftover containers will cause "port already in use" errors.)
+3. `Ctrl+Shift+P` → **Dev Containers: Reopen in Container**.
+4. First image build takes ~2–3 min (image pull, JDK 25 + Node LTS install). Subsequent reopens take seconds.
+5. When VS Code finishes attaching, you'll see `OnlineShop Workspace` in the lower-left status bar.
+
+**First-time setup (only needed once — cached in named volumes):**
+```bash
+# Maven deps (~3-5 min total, run in parallel or sequentially)
+cd /workspaces/OnlineShop-claude
+(cd Auth && ./mvnw -DskipTests compile) &
+(cd Items && ./mvnw -DskipTests compile) &
+(cd api-gateway && ./mvnw -DskipTests compile) &
+wait
+
+# Frontend deps (~20s)
+cd frontend && npm install
+```
+After this, the `.m2` and `node_modules` volumes persist across container rebuilds — you only re-download if you delete the Docker volumes.
 
 **Start the services (each in its own VS Code terminal or Run config):**
 1. Open the **Run and Debug** view (`Ctrl+Shift+D`) and click ▶ on `AuthApplication`, then `ItemsApplication`, then `ApiGatewayApplication`. Breakpoints, hot-reload, variable inspection — all work.
@@ -117,7 +132,9 @@ Everything is reachable from your Windows host as `http://localhost:<port>` exac
 
 ## Troubleshooting
 
-- **`./mvnw: Permission denied`** — run `chmod +x Auth/mvnw Items/mvnw api-gateway/mvnw`. The post-create script does this; if you cloned with Windows line endings disabled, you may need to redo it.
-- **First Maven run is slow** — `post-create.sh` pre-warms the cache, but a network hiccup can interrupt it. Re-run manually: `cd Auth && ./mvnw -DskipTests dependency:go-offline`.
+- **Port already in use (e.g., 10000)** — a previous `docker compose up` from the repo root left containers running with the same port mappings. Run `docker compose down` from PowerShell before reopening in the devcontainer.
+- **`./mvnw: Permission denied`** — run `chmod +x Auth/mvnw Items/mvnw api-gateway/mvnw common/mvnw`. The post-create script does this; if you cloned with Windows line endings disabled, you may need to redo it.
+- **`MavenWrapperMain` ClassNotFoundException** — the committed `maven-wrapper.jar` is stale. Delete it and let mvnw re-download: `rm Auth/.mvn/wrapper/maven-wrapper.jar && cd Auth && ./mvnw -DskipTests compile`.
+- **First Maven run is slow** — Maven deps are cached in the `onlineshop-m2` named volume. The very first build downloads everything (~3-5 min). After that, rebuilds are instant and survive container rebuilds.
 - **Service can't reach Postgres** — verify the profile is active in the running JVM: hit `http://localhost:9001/actuator/env` and check `spring.profiles.active`. If empty, restart the run config.
-- **Claude CLI not found** — the post-create install may have failed offline. Run `npm install -g @anthropic-ai/claude-code` manually.
+- **Claude CLI not found** — the post-create install may have failed offline. Run `npm install -g @anthropic-ai/claude-code` manually (no sudo — use nvm's npm).

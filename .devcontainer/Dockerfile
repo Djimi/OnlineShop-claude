@@ -2,19 +2,25 @@
 # Provides JDK 25, Node LTS, Docker CLI, Claude Code CLI, and common dev tools.
 # Spring Boot services and the React frontend are run from inside this container
 # against infra (Postgres, Redis, Kafka) running as sibling Compose services.
-FROM mcr.microsoft.com/devcontainers/java:1-21-bookworm
-
-# --- JDK 25 (Temurin) -------------------------------------------------------
-# Base image ships with 21; we need 25 to match the services' pom.xml.
-# Installed via the devcontainer "java" feature at devcontainer.json level,
-# which layers on top of this image and sets JAVA_HOME.
+#
+# We use the generic base image instead of the java-specific one because:
+#   1. The java:1-21 image ships JDK 21 which conflicts with the JDK 25
+#      installed by the devcontainer java feature — VS Code's Java extension
+#      may pick up JDK 21 and fail to compile Java 25 source ("Main method
+#      not found").
+#   2. The java image sets NPM_CONFIG_PREFIX=/home/vscode/.npm-global which
+#      is incompatible with nvm (installed by the devcontainer node feature).
+#   3. With NPM_CONFIG_PREFIX set, `npm install -g` puts binaries in a
+#      directory that's not on the PATH for interactive shells using nvm,
+#      making the Claude Code CLI invisible.
+#
+# JDK 25 and Node LTS are installed cleanly via devcontainer features
+# (see devcontainer.json).
+FROM mcr.microsoft.com/devcontainers/base:bookworm
 
 # --- OS tooling -------------------------------------------------------------
-# The base image ships with a stale Yarn apt source whose GPG key has expired,
-# which breaks `apt-get update`. We don't use Yarn (we use npm), so we drop
-# the Yarn repo entirely before updating the package index.
-RUN rm -f /etc/apt/sources.list.d/yarn.list \
-    && apt-get update \
+# Install common CLI tools for development and database inspection.
+RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         curl \
         jq \

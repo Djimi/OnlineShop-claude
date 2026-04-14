@@ -89,9 +89,13 @@
   },
 
   // Runs once after the container is created. Idempotent.
-  // - Installs Claude Code CLI (per-user, survives rebuilds via volume).
-  // - Pre-warms Maven dependency cache for all three services so the first
-  //   "Run" click doesn't spend 5 min downloading.
+  // - Fixes ownership on named volumes (Docker creates them as root).
+  // - Installs Claude Code CLI via nvm-managed npm.
+  // - Makes mvnw scripts executable.
+  // Maven deps and frontend node_modules are NOT pre-warmed here — they're
+  // cached in named volumes (onlineshop-m2, onlineshop-frontend-node-modules)
+  // and persist across rebuilds. Run the first build manually; after that
+  // everything is instant.
   "postCreateCommand": "bash .devcontainer/post-create.sh",
 
   "customizations": {

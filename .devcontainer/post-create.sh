@@ -4,6 +4,20 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
+# Load nvm so that `node` and `npm` resolve to the nvm-managed versions.
+# The devcontainer node feature installs nvm but non-interactive scripts
+# don't source ~/.bashrc, so we load it explicitly.
+#
+# Belt-and-suspenders: unset NPM_CONFIG_PREFIX in case a base image or
+# feature left it set — nvm refuses to work when it's present.
+# ---------------------------------------------------------------------------
+unset NPM_CONFIG_PREFIX 2>/dev/null || true
+export NVM_DIR="${NVM_DIR:-/usr/local/share/nvm}"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  . "$NVM_DIR/nvm.sh"
+fi
+
+# ---------------------------------------------------------------------------
 # Fix ownership on named volumes.
 #
 # Docker initializes fresh named volumes as root-owned. We mount two volumes
@@ -18,53 +32,34 @@ sudo chown -R vscode:vscode /home/vscode/.m2 || true
 sudo chown -R vscode:vscode /workspaces/OnlineShop-claude/frontend/node_modules || true
 
 # ---------------------------------------------------------------------------
-# Install Claude Code CLI system-wide.
-# We install with sudo into /usr/local (npm's default global prefix) rather
-# than into a per-user .npm-global volume. Reinstall on rebuild is ~20s, not
-# worth the volume management overhead.
+# Install Claude Code CLI via nvm-managed npm (no sudo).
+#
+# Using nvm's npm (not sudo npm) ensures the binary lands in nvm's bin
+# directory which is already on the user's PATH. `sudo npm install -g`
+# would use root's npm, putting the binary somewhere the vscode user's
+# shell can't find.
 # ---------------------------------------------------------------------------
 echo "[post-create] Installing Claude Code CLI..."
 if ! command -v claude >/dev/null 2>&1; then
-  sudo npm install -g @anthropic-ai/claude-code || {
-    echo "[post-create] WARN: claude CLI install failed — install manually with 'sudo npm i -g @anthropic-ai/claude-code'"
+  npm install -g @anthropic-ai/claude-code || {
+    echo "[post-create] WARN: claude CLI install failed — install manually with 'npm i -g @anthropic-ai/claude-code'"
   }
 else
   echo "[post-create] claude CLI already installed: $(claude --version 2>/dev/null || echo 'unknown')"
 fi
 
 echo "[post-create] Ensuring mvnw is executable..."
-chmod +x Auth/mvnw Items/mvnw api-gateway/mvnw 2>/dev/null || true
-
-# ---------------------------------------------------------------------------
-# Pre-warm Maven dependency cache so the first VS Code "Run" click doesn't
-# spend 5 min downloading. Runs the three services in parallel.
-# ---------------------------------------------------------------------------
-echo "[post-create] Pre-warming Maven dependency cache (one-time, ~3-5 min)..."
-(cd Auth        && ./mvnw -q -T 1C -DskipTests dependency:go-offline) &
-PID_AUTH=$!
-(cd Items       && ./mvnw -q -T 1C -DskipTests dependency:go-offline) &
-PID_ITEMS=$!
-(cd api-gateway && ./mvnw -q -T 1C -DskipTests dependency:go-offline) &
-PID_GW=$!
-
-wait $PID_AUTH || echo "[post-create] WARN: Auth dependency resolution failed"
-wait $PID_ITEMS || echo "[post-create] WARN: Items dependency resolution failed"
-wait $PID_GW || echo "[post-create] WARN: api-gateway dependency resolution failed"
-
-# ---------------------------------------------------------------------------
-# Frontend deps.
-# frontend/node_modules is a container-only named volume that shadows the
-# host directory, so this always starts from an empty state and does a
-# full Linux install — no Windows binary contamination.
-# ---------------------------------------------------------------------------
-if [ -d frontend ]; then
-  echo "[post-create] Installing frontend dependencies..."
-  (cd frontend && npm install) || echo "[post-create] WARN: frontend npm install failed"
-fi
+chmod +x Auth/mvnw Items/mvnw api-gateway/mvnw common/mvnw 2>/dev/null || true
 
 echo "[post-create] Done."
 echo
-echo "Next steps:"
+echo "First-time setup (only needed once — cached in named volumes):"
+echo "  1. cd Auth        && ./mvnw -DskipTests compile"
+echo "  2. cd Items       && ./mvnw -DskipTests compile"
+echo "  3. cd api-gateway && ./mvnw -DskipTests compile"
+echo "  4. cd frontend    && npm install"
+echo
+echo "After that:"
 echo "  - Click 'Run' in VS Code on AuthApplication / ItemsApplication / ApiGatewayApplication"
 echo "  - Or run from a terminal:  cd Auth && ./mvnw spring-boot:run"
 echo "  - Frontend:                  cd frontend && npm run dev -- --host 0.0.0.0"
