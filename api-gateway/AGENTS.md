@@ -11,6 +11,7 @@ The API Gateway is the entry point to OnlineShop services. It routes traffic, en
 | Location   | `/api-gateway`                         |
 | Database   | None (uses Redis for caching/limits)   |
 
+
 ## Responsibilities
 
 - **Routing**: `/api/v1/auth/**` → Auth, `/api/v1/items/**` → Items.
