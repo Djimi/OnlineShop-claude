@@ -88,3 +88,7 @@ api-gateway/
 - Service boots even if Redis is down (cache is optional).
 - Cached tokens continue to work during Auth outages; uncached tokens fail fast.
 - Rate limiting can be disabled via `gateway.ratelimit.enabled=false` (useful for tests).
+
+## Development Notes
+
+- In this workspace, VS Code Spring Boot live-information auto-JMX is disabled via `.vscode/settings.json` so IDE launches do not compete with the gateway's HTTP port `10000`.

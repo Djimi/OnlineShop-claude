@@ -79,6 +79,7 @@ Open the Run and Debug view (`Ctrl+Shift+D`) and pick:
 - `ApiGatewayApplication`
 
 The launch configs in `.vscode/launch.json` need no changes — they inherit `SPRING_PROFILES_ACTIVE` from the container env.
+The workspace also disables `boot-java.live-information.automatic-connection.on` in `.vscode/settings.json` so the Spring Boot dev tools do not auto-inject JMX/live-data wiring that can collide with the gateway's HTTP port `10000` during VS Code launches.
 
 ### From a terminal
 
@@ -133,6 +134,7 @@ Everything is reachable from your Windows host as `http://localhost:<port>` exac
 ## Troubleshooting
 
 - **Port already in use (e.g., 10000)** — a previous `docker compose up` from the repo root left containers running with the same port mappings. Run `docker compose down` from PowerShell before reopening in the devcontainer.
+- **VS Code launch shows JMX live-data refresh failures or a false `10000 already in use` for `api-gateway`** — the workspace disables Spring Boot live-information auto-JMX in `.vscode/settings.json`. Reload the VS Code window if the extension still uses stale settings from before the change.
 - **`./mvnw: Permission denied`** — run `chmod +x Auth/mvnw Items/mvnw api-gateway/mvnw common/mvnw`. The post-create script does this; if you cloned with Windows line endings disabled, you may need to redo it.
 - **`MavenWrapperMain` ClassNotFoundException** — the committed `maven-wrapper.jar` is stale. Delete it and let mvnw re-download: `rm Auth/.mvn/wrapper/maven-wrapper.jar && cd Auth && ./mvnw -DskipTests compile`.
 - **First Maven run is slow** — Maven deps are cached in the `onlineshop-m2` named volume. The very first build downloads everything (~3-5 min). After that, rebuilds are instant and survive container rebuilds.
