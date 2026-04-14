@@ -1,0 +1,69 @@
+# Dev Container Compose override.
+#
+# This file is layered on top of the root ../docker-compose.yml by VS Code
+# Dev Containers (see devcontainer.json -> dockerComposeFile).
+#
+# It only adds one new service: the "workspace" container that you actually
+# work inside. The infra services (Postgres x2, Redis, Kafka, Kafka UI,
+# pgAdmin) are reused unchanged from the root compose file.
+#
+# The application services (auth-service / items-service / api-gateway) are
+# defined in the root compose file but are NOT started by the devcontainer:
+# devcontainer.json's "runServices" key whitelists only infra + workspace.
+# You run the Spring Boot apps from inside the workspace via VS Code's Run
+# button or `./mvnw spring-boot:run`.
+#
+# IMPORTANT — path resolution gotcha:
+# When Docker Compose merges multiple -f files, ALL relative paths are
+# resolved against the FIRST file (the root ../docker-compose.yml), not
+# against the file they appear in. That's why `context`, `dockerfile`,
+# and the workspace bind mount below are written as if this file lived at
+# the repo root.
+
+services:
+  workspace:
+    build:
+      context: .devcontainer
+      dockerfile: Dockerfile
+    container_name: onlineshop-workspace
+    init: true
+    # Keep the container running so VS Code can attach.
+    command: sleep infinity
+    volumes:
+      # Mount the repo root (resolved from the root compose file's directory,
+      # which IS the repo root — see the path-resolution note above).
+      - .:/workspaces/OnlineShop-claude:cached
+      # Shadow frontend/node_modules with a container-only volume so Windows
+      # binaries sitting in the host node_modules don't collide with the
+      # Linux ones npm installs inside the container. Your Windows-side
+      # node_modules stays untouched.
+      - onlineshop-frontend-node-modules:/workspaces/OnlineShop-claude/frontend/node_modules
+      # Persist Maven cache across rebuilds (cold start without this is ~5 min).
+      # NOTE: first mount is root-owned; post-create.sh chowns it to vscode.
+      - onlineshop-m2:/home/vscode/.m2
+      # Persist Claude Code credentials, memory, and settings.
+      # On Windows the host path resolves via Docker Desktop's WSL2 backend.
+      - ${USERPROFILE:-${HOME}}/.claude:/home/vscode/.claude
+      # NOTE: the host Docker socket is intentionally NOT mounted. Mounting
+      # /var/run/docker.sock would give any process inside the container
+      # (including an autonomous agent in yolo mode) effective root on the
+      # host — it could `docker run -v /:/host --privileged ... rm -rf /host`.
+      # If you need to inspect infra containers, run `docker ps` / `docker logs`
+      # from Windows PowerShell instead.
+    environment:
+      # Activate the per-service Spring profile that points at sibling
+      # container hostnames (auth-postgres, items-postgres, redis, kafka).
+      SPRING_PROFILES_ACTIVE: devcontainer
+    networks:
+      - onlineshop-network
+    # We don't gate startup on infra healthchecks because you may want to
+    # start the workspace and bring infra up manually for debugging.
+    depends_on:
+      - items-postgres
+      - auth-postgres
+      - redis
+      - kafka
+
+volumes:
+  onlineshop-m2:
+  onlineshop-frontend-node-modules:

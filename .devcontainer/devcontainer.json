@@ -1,27 +1,119 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/java
+// VS Code Dev Container for OnlineShop.
+//
+// What this gives you:
+//   - JDK 25 (matches all services' pom.xml)
+//   - Maven (project-local ./mvnw still works; system maven is also available)
+//   - Node LTS for the React frontend and the Claude Code CLI
+//   - Postgres / Redis / Kafka / Kafka UI / pgAdmin sibling containers from
+//     the root docker-compose.yml, fully port-forwarded to the Windows host
+//   - VS Code "Run" / "Debug" buttons on existing launch.json configs work
+//     out of the box: SPRING_PROFILES_ACTIVE=devcontainer is inherited from
+//     the container env, and each service has an application-devcontainer.yml
+//     that overrides hostnames to point at sibling containers.
+//
+// What this does NOT do:
+//   - Start auth-service / items-service / api-gateway as containers. Those
+//     compose services exist in root docker-compose.yml but the "runServices"
+//     key below filters them out. You run them from inside the workspace via
+//     the Run button or ./mvnw spring-boot:run.
 {
-	"name": "Java",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/java:3-25-trixie",
+  "name": "OnlineShop Workspace",
 
-	"features": {
-		"ghcr.io/devcontainers/features/java:1": {
-			"version": "none",
-			"installMaven": "true",
-			"installGradle": "true"
-		}
-	}
+  // Layered compose: root file + devcontainer override.
+  // Order matters: VS Code merges later files on top of earlier ones.
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.yml"
+  ],
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+  // Which container VS Code attaches to.
+  "service": "workspace",
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "java -version",
+  // Which compose services VS Code starts. Whitelisting infra + workspace
+  // keeps the heavyweight Spring services off — you launch those yourself.
+  "runServices": [
+    "workspace",
+    "items-postgres",
+    "auth-postgres",
+    "redis",
+    "kafka",
+    "kafka-ui",
+    "pgadmin"
+  ],
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+  "workspaceFolder": "/workspaces/OnlineShop-claude",
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  // Stop infra + workspace when VS Code window closes (matches normal flow).
+  "shutdownAction": "stopCompose",
+
+  // Layer JDK 25 and Node LTS on top of the workspace image.
+  // NOTE: the docker-outside-of-docker feature is intentionally NOT installed.
+  // It would mount /var/run/docker.sock and give any in-container process
+  // root on the host. If you need `docker ps` / `docker logs` for infra,
+  // run them from Windows PowerShell instead.
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "jdkDistro": "tem",
+      "installMaven": "true",
+      "installGradle": "false"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+
+  // Ports forwarded from the workspace container to the Windows host.
+  // Infra ports (5432, 5433, 6379, 9092, 5051, 8080) are already mapped on
+  // the host by the root docker-compose.yml, so they're not listed here.
+  "forwardPorts": [
+    9000,  // items-service
+    9001,  // auth-service
+    10000, // api-gateway
+    5173   // vite frontend
+  ],
+  "portsAttributes": {
+    "9000":  { "label": "items-service",  "onAutoForward": "notify" },
+    "9001":  { "label": "auth-service",   "onAutoForward": "notify" },
+    "10000": { "label": "api-gateway",    "onAutoForward": "notify" },
+    "5173":  { "label": "frontend (vite)", "onAutoForward": "openBrowser" }
+  },
+
+  // Run as the non-root user that the base image provides.
+  "remoteUser": "vscode",
+
+  // Inherited by every shell + every process VS Code spawns inside the
+  // container, including Maven runs from the Run button.
+  "remoteEnv": {
+    "SPRING_PROFILES_ACTIVE": "devcontainer"
+  },
+
+  // Runs once after the container is created. Idempotent.
+  // - Installs Claude Code CLI (per-user, survives rebuilds via volume).
+  // - Pre-warms Maven dependency cache for all three services so the first
+  //   "Run" click doesn't spend 5 min downloading.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Java
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        // Frontend
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        // Infra / DX
+        "redhat.vscode-yaml",
+        // Claude
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "java.compile.nullAnalysis.mode": "automatic",
+        "files.eol": "\n"
+      }
+    }
+  }
 }

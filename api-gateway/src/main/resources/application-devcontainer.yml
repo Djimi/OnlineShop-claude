@@ -1,0 +1,10 @@
+# Spring profile activated automatically inside the VS Code Dev Container
+# (.devcontainer/devcontainer.json sets SPRING_PROFILES_ACTIVE=devcontainer).
+#
+# Only overrides the Redis hostname. auth-service and items-service still
+# run inside the SAME workspace container as the gateway, so localhost:9001
+# and localhost:9000 from gateway.* keep working unchanged.
+spring:
+  data:
+    redis:
+      host: redis
