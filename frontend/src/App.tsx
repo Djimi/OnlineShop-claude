@@ -12,10 +12,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#f4f1ea] text-[#1f1a14]">
         <Navbar />
         <AppRoutes />
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#f4f1ea',
+              color: '#1f1a14',
+              border: '1px solid #dcd5c7',
+              borderRadius: 0,
+              fontSize: '13px',
+              letterSpacing: '0.02em',
+            },
+          }}
+        />
       </div>
     </BrowserRouter>
   );

@@ -21,7 +21,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           className={clsx(
             'input-field',
-            error && 'border-red-500 focus:ring-red-500',
+            error && 'border-b-[#7a3b2c] focus:border-b-[#7a3b2c]',
             className
           )}
           {...rest}
