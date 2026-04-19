@@ -48,7 +48,7 @@ mvn help:effective-pom
 # Dependency debugging
 mvn dependency:tree
 
-# Skip tests
+# Skip tests>
 mvn package -DskipTests
 mvn package -Dmaven.test.skip=true
 

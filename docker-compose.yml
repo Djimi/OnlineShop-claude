@@ -40,6 +40,24 @@ services:
     networks:
       - onlineshop-network
 
+  pgadmin:
+    image: dpage/pgadmin4:9.2
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@onlineshop.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      items-postgres:
+        condition: service_healthy
+      auth-postgres:
+        condition: service_healthy
+    networks:
+      - onlineshop-network
+
   # ==================== REDIS (Token Cache) ====================
   redis:
     image: redis:8-alpine
@@ -195,3 +213,4 @@ volumes:
   auth-postgres-data:
   redis-data:
   kafka-data:
+  pgadmin-data:

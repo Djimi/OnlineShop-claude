@@ -169,8 +169,8 @@ function performValidate(testUser) {
 
         recordValidateMetrics(res, success);
 
-        // If validation failed due to invalid/expired token, clear cache
-        if (!success && res.status === 401) {
+        // Clear cache on any validation mismatch (API can return 200 with valid=false).
+        if (!success) {
             cachedToken = null;
             cachedTokenExpiry = 0;
         }

@@ -19,23 +19,35 @@ spring:
     password: authpassword
     driver-class-name: org.postgresql.Driver
     hikari:
+      maximum-pool-size: 100
+      minimum-idle: 100
       connection-timeout: 2000
+      pool-name: authPool
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        generate_statistics: false
+        session:
+          events:
+            log: false
 
 session:
   expiration: 3600
 
+
 management:
   # Individual endpoint settings (singular)
   endpoint:
+    web:
+      exposure:
+        include: health,metrics,prometheus
     health:
       show-details: always
       group:
@@ -67,7 +79,50 @@ logging:
   level:
     com.onlineshop.auth: INFO
     org.springframework.web: TRACE
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: WARN
+    org.hibernate.SQL_SLOW: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.hibernate.session.metrics: WARN
+    org.hibernate.stat: WARN
+    org.hibernate.stat.internal.StatisticsImpl: WARN
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [requestId=%X{requestId}] [%level] [%logger{48}] - %msg%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: db-troubleshooting
+  datasource:
+    hikari:
+      register-mbeans: true
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+        session:
+          events:
+            log: true
+            LOG_QUERIES_SLOWER_THAN_MS: ${auth.troubleshooting.hibernate.slow-query-threshold-ms:100}
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL_SLOW: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.session.metrics: DEBUG
+    org.hibernate.stat: DEBUG
+    org.hibernate.stat.internal.StatisticsImpl: DEBUG
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: DEBUG
+    com.zaxxer.hikari: TRACE
+    com.zaxxer.hikari.HikariConfig: TRACE
+    com.zaxxer.hikari.HikariDataSource: TRACE
+    com.zaxxer.hikari.pool.HikariPool: TRACE
+    com.zaxxer.hikari.pool.PoolBase: TRACE
+    com.onlineshop.auth.config.datasource: DEBUG
+
+auth:
+  troubleshooting:
+    datasource:
+      acquire-slow-threshold-ms: 0

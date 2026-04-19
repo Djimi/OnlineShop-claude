@@ -13,7 +13,8 @@ which are compatible with the rest of the stack. When you fix a bug/issue you MU
 5. **Modern Java Features** - Virtual threads, enhanced switch, var, records, sealed classes
 6. The code MUST BE easily maintainable and extensible for future features
 7. The code MUST BE easy to be tested (unit, integration, e2e)
-8. DO NOT WRITE TESTS BY DEFAULT. Write tests only when explicitly requested.
+8. DO NOT WRITE TESTS BY DEFAULT. Write tests only when explicitly requeste
+9. If possible, when troubleshooting an issue (for example DB performance) you MUST use already implemented solutions - for example using loggers from the library, instead of implementing wrapper around the standard classes and log the response time.
 
 ## Code Quality Rules
 

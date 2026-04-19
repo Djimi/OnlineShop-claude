@@ -52,7 +52,7 @@ docker compose -f tests/performance/docker-compose.perf.yml ps
 
 ```bash
 cd tests/performance
-k6 run smoke.js
+k6 run smoke-1vu.js
 ```
 
 ### 3. Run Load Test (Realistic Traffic)
@@ -89,6 +89,13 @@ All tests use the following traffic mix (configurable):
 - **10%** Login (`POST /api/v1/auth/login`)
 - **10%** Registration (`POST /api/v1/auth/register`)
 
+Smoke test (`smoke-1vu.js`) enforces an exact per-iteration ratio of `1:1:8`:
+- 1 register
+- 1 login
+- 8 validates split as:
+- 7 validates with 7 distinct valid tokens (one per seeded smoke user)
+- 1 validate with an invalid token (expected response `200` with `valid=false`)
+
 ## SLO Thresholds
 
 | Endpoint | P95 Target | P99 Target |
@@ -102,7 +109,7 @@ All tests use the following traffic mix (configurable):
 ```
 tests/performance/
 ├── README.md                    # This file
-├── smoke.js                     # Smoke test
+├── smoke-1vu.js                 # Smoke test (default 1 VU)
 ├── load.js                      # Load test
 ├── stress.js                    # Stress test
 ├── docker-compose.perf.yml      # Test environment
@@ -133,7 +140,7 @@ tests/performance/
 
 Example:
 ```bash
-k6 run -e ENV=docker smoke.js
+k6 run -e ENV=docker smoke-1vu.js
 ```
 
 ### Output Formats
@@ -235,7 +242,7 @@ k6 run load.js
 docker run --rm -i \
   --network=host \
   -v $(pwd):/tests \
-  grafana/k6 run /tests/smoke.js
+  grafana/k6 run /tests/smoke-1vu.js
 ```
 
 ### Baseline Comparison
@@ -259,7 +266,8 @@ See the plan document for GitHub Actions integration examples.
 
 When adding new tests:
 
-1. Follow the existing patterns in `smoke.js`, `load.js`, `stress.js`
+1. Follow the existing patterns in `smoke-1vu.js`, `load.js`, `stress.js`
 2. Use the shared utilities from `utils/`
 3. Add appropriate thresholds in `config/thresholds.js`
 4. Update this README with any new test scenarios
+

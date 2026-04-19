@@ -1,0 +1,12 @@
+# Spring profile activated automatically inside the VS Code Dev Container
+# (.devcontainer/devcontainer.json sets SPRING_PROFILES_ACTIVE=devcontainer).
+#
+# Only overrides infrastructure hostnames so the service can talk to sibling
+# Compose containers on the onlineshop-network bridge instead of localhost.
+# Everything else (pool sizing, JPA, management) is inherited from
+# application.yml.
+spring:
+  datasource:
+    # auth-postgres is the container hostname; port is the in-network port
+    # (5432), not the host-mapped 5433.
+    url: jdbc:postgresql://auth-postgres:5432/auth

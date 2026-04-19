@@ -8,16 +8,10 @@ import { authService } from '../services/authService';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { LogIn } from 'lucide-react';
 
-// Validation schema
 const loginSchema = z.object({
-  username: z
-    .string()
-    .min(1, 'Username is required'),
-  password: z
-    .string()
-    .min(1, 'Password is required'),
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -43,15 +37,9 @@ export default function Login() {
         password: data.password,
       });
 
-      // Store auth data
       setAuth(response.token, response.userId, response.username);
-
-      toast.success(`Welcome back, ${response.username}!`);
-
-      // Redirect to items catalog
-      setTimeout(() => {
-        navigate('/items');
-      }, 500);
+      toast.success(`Welcome back, ${response.username}.`);
+      setTimeout(() => navigate('/items'), 500);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.detail ||
@@ -65,79 +53,47 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12">
+    <div className="min-h-[calc(100vh-120px)] flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
-        {/* Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* Header */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <LogIn className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-
-          <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
-            Welcome Back
+        <div className="text-center mb-10">
+          <div className="w-px h-14 bg-[#1f1a14] opacity-40 mx-auto mb-6" />
+          <div className="eyebrow mb-5">— Sign in —</div>
+          <h1 className="font-display font-light text-5xl leading-[1] tracking-[-0.015em]">
+            Welcome <em className="italic text-[#7a3b2c] font-normal">back</em>.
           </h1>
-          <p className="text-center text-gray-600 mb-8">
-            Sign in to your account to continue shopping
-          </p>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <Input
-              label="Username"
-              placeholder="Enter your username"
-              error={errors.username?.message}
-              {...register('username')}
-            />
-
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Enter your password"
-              error={errors.password?.message}
-              {...register('password')}
-            />
-
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              type="submit"
-              isLoading={isLoading}
-            >
-              Sign In
-            </Button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-6 relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">New here?</span>
-            </div>
-          </div>
-
-          {/* Sign Up Link */}
-          <Link to="/register">
-            <Button
-              variant="secondary"
-              size="lg"
-              fullWidth
-              type="button"
-            >
-              Create Account
-            </Button>
-          </Link>
-
-          {/* Footer Link */}
-          <p className="text-center text-gray-600 text-sm mt-6">
-            Back to <Link to="/" className="font-semibold hover:underline">home</Link>
+          <p className="mt-5 text-[#5b524a] text-sm font-light">
+            Sign in to continue to your shelf.
           </p>
         </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
+          <Input
+            label="Username"
+            placeholder="your username"
+            error={errors.username?.message}
+            {...register('username')}
+          />
+          <Input
+            label="Password"
+            type="password"
+            placeholder="your password"
+            error={errors.password?.message}
+            {...register('password')}
+          />
+
+          <div className="pt-2">
+            <Button variant="primary" size="lg" fullWidth type="submit" isLoading={isLoading}>
+              Sign in
+            </Button>
+          </div>
+        </form>
+
+        <p className="text-center mt-10 text-sm text-[#5b524a] font-light">
+          New here?{' '}
+          <Link to="/register" className="text-[#7a3b2c] border-b border-[#7a3b2c] pb-0.5 hover:text-[#1f1a14] hover:border-[#1f1a14]">
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
   );

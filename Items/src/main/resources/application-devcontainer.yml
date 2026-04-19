@@ -1,0 +1,8 @@
+# Spring profile activated automatically inside the VS Code Dev Container
+# (.devcontainer/devcontainer.json sets SPRING_PROFILES_ACTIVE=devcontainer).
+#
+# Only overrides the datasource hostname so the service can reach the
+# items-postgres sibling container on the onlineshop-network bridge.
+spring:
+  datasource:
+    url: jdbc:postgresql://items-postgres:5432/items

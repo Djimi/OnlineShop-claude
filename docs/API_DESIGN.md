@@ -2,7 +2,7 @@
 
 ## Design Principles
 
-- **Versioning:** Path-based `/api/v1/resource`
+- **Versioning:** Path-based `/api/v1/resource` for service APIs; gateway may expose unversioned public info endpoints (e.g., `/api/product-info`) when no service owns the data.
 - **Error format:** RFC 9457 Problem Details
 - **Response format:** JSON with consistent structure
 - **Propery names** Use camelCase for property names
