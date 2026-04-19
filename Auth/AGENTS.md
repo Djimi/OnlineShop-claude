@@ -1,59 +1,41 @@
-# CLAUDE.md - Auth Service Guide
-
-> This file helps Claude understand and work efficiently with the Auth microservice.
-
----
+# CLAUDE.md — Auth Service
 
 ## Quick Reference
 
-| Property | Value             |
-|----------|-------------------|
-| Port | 9001              |
-| Language | Java 25           |
-| Framework | Spring Boot 4.X.X |
-| Database | PostgreSQL        |
-| Build Tool | Maven             |
+| Property   | Value             |
+|------------|-------------------|
+| Port       | 9001              |
+| Language   | Java 25           |
+| Framework  | Spring Boot 4.1.0 |
+| Database   | PostgreSQL 18     |
+| Build Tool | Maven 3.9.12      |
+
+## Commands
+
+```bash
+mvn clean install        # Build
+mvn spring-boot:run      # Run
+mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=db-troubleshooting"  # Run with DB diagnostics
+mvn test                 # Run all tests
+```
 
 ## Service Overview
 
-The Auth service handles user authentication and session management:
-- User registration
-- User login
-- Session token validation
-- Session management
+Handles user authentication and session management: registration, login, session token validation, and session lifecycle. No caching layer — all reads hit the database directly.
 
-## Project Structure
+Base package: `src/main/java/com/onlineshop/auth/`
 
-```
-Auth/
-├── src/main/java/com/onlineshop/auth/
-│   ├── controller/     # REST endpoints
-│   ├── service/        # Business logic
-│   ├── repository/     # Data access
-│   ├── entity/         # JPA entities (User, Session)
-│   ├── dto/            # Request/Response DTOs
-│   ├── exception/      # Custom exceptions & handlers
-│   └── config/         # Security configuration
-├── init-db/            # Database initialization scripts
-└── pom.xml
-```
+Standard Spring Boot layered architecture: `controller/` → `service/` → `repository/` with JPA entities (`User`, `Session`), DTOs for request/response, custom exceptions with a global handler, and security configuration. Database init scripts live in `init-db/` (outside `src`).
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register new user |
-| POST | `/api/v1/auth/login` | User login |
-| GET | `/api/v1/auth/validate` | Validate session token |
+| Method | Endpoint                   | Description            |
+|--------|----------------------------|------------------------|
+| POST   | `/api/v1/auth/register`    | Register new user      |
+| POST   | `/api/v1/auth/login`       | User login             |
+| GET    | `/api/v1/auth/validate`    | Validate session token |
 
-## Gateway Contract (Example)
-
-- Gateway proxies `/api/v1/auth/**` to this service with no auth required.
-
-Example:
-```bash
-curl http://localhost:10000/api/v1/auth/validate
-```
+**Validate contract:** invalid tokens return HTTP `200` with `valid=false` in the response body, not a 4xx error.
 
 ## Database
 
@@ -62,48 +44,22 @@ curl http://localhost:10000/api/v1/auth/validate
 
 ## Configuration
 
-Main configuration: [src/main/resources/application.yml](./src/main/resources/application.yml)
+Main config: [src/main/resources/application.yml](./src/main/resources/application.yml)
 
-### DB Troubleshooting Toggle
+### DB Troubleshooting Profile
 
-Hibernate query diagnostics are now disabled by default.
+Activate with `--spring.profiles.active=db-troubleshooting`. Enables:
 
-Enable diagnostics with one startup argument:
+- Hibernate statistics and session event logging
+- Slow query logging (configurable via `auth.troubleshooting.hibernate.slow-query-threshold-ms`, default unset)
+- Verbose Hibernate SQL and statistics log levels
+- HikariCP pool diagnostics at `TRACE` (`com.zaxxer.hikari.*`)
+- Datasource acquisition timing with pool state (active/idle/waiting/total), sub-ms precision
+- Console log format includes log level and logger name
 
-```bash
---spring.profiles.active=db-troubleshooting
-```
-
-Optional slow-query threshold (milliseconds):
+Optional threshold overrides:
 
 ```bash
 --auth.troubleshooting.hibernate.slow-query-threshold-ms=100
-```
-
-Optional datasource acquire threshold for warning logs (milliseconds):
-
-```bash
 --auth.troubleshooting.datasource.acquire-slow-threshold-ms=2
 ```
-
-When the `db-troubleshooting` profile is active, the service enables:
-- Hibernate statistics generation
-- Hibernate session event logging
-- Slow query logging (`LOG_QUERIES_SLOWER_THAN_MS`)
-- Verbose Hibernate SQL/statistics log levels
-- Hikari internal pool diagnostics (`com.zaxxer.hikari.*` at `TRACE`)
-- Datasource acquisition timing logs with pool state (`active/idle/waiting/total`) and sub-millisecond precision
-- Console logs include log level and logger name for faster troubleshooting
-
-To disable diagnostics, start the service without the profile argument.
-
-## Resilience & Caching
-- No caching implemented currently
-
-## Performance Test Notes
-- Smoke performance test (`tests/performance/smoke-1vu.js`) uses 7 seeded users created in setup.
-- Each smoke iteration keeps a fixed `1:1:8` operation ratio:
-- 1 register, 1 login, 8 validate.
-- Validate flow is `7` requests with distinct valid tokens and `1` request with an invalid token.
-- Invalid-token validate is expected to return HTTP `200` with response field `valid=false`.
-
