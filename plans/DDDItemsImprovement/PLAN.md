@@ -99,9 +99,11 @@ The service has solid DDD scaffolding — proper aggregate roots, value objects,
   - Use `@SpringBootTest` with Testcontainers (PostgreSQL 18)
   - Verify events are published and persisted correctly
 
-- [ ] **4.3 — Add controller integration tests**
-  - Test `ItemsController` endpoints with `@WebMvcTest`
-  - Verify HTTP status codes, response bodies, and error handling (404, 400)
+- [x] **4.3 — Add controller E2E tests (full HTTP stack)**
+  - Test `ItemsController` endpoints with `@SpringBootTest(webEnvironment = RANDOM_PORT)` + Testcontainers + `RestTemplate`
+  - Cover full lifecycle: create → get → update → delete → 404 after delete
+  - Cover edge cases: null description, not-found error responses (404), empty search results
+  - **Note:** Spring Boot 4.0.2 removed `@WebMvcTest`, `@MockBean`, and `MockMvc` from `spring-boot-test-autoconfigure`. Using `@SpringBootTest` + Testcontainers + `RestTemplate` is the only available approach.
 
 ---
 
