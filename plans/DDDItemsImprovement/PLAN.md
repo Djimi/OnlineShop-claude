@@ -64,27 +64,27 @@ The service has solid DDD scaffolding — proper aggregate roots, value objects,
 
 ### Phase 3: Domain Depth
 
-- [ ] **3.1 — Seal domain event hierarchy**
-  - **Files:** `domain/event/ItemCreated.java`, `ItemUpdated.java`, `ItemDeleted.java`
+- [x] **3.1 — Seal domain event hierarchy**
+  - **Files:** `domain/event/ItemDomainEvent.java` (new), `ItemCreated.java`, `ItemUpdated.java`, `ItemDeleted.java`
   - **Problem:** Domain events extend `BaseDomainEvent` but are not part of a sealed hierarchy. A future developer adding `ItemPriceChanged` could miss updating all handlers.
-  - **Fix:** Add `sealed interface ItemDomainEvent extends DomainEvent permits ItemCreated, ItemUpdated, ItemDeleted`. Update event classes to implement `ItemDomainEvent`.
+  - **Fix:** Created `sealed interface ItemDomainEvent extends DomainEvent permits ItemCreated, ItemUpdated, ItemDeleted`. Updated event classes to implement `ItemDomainEvent`. Refactored `ItemDomainEventListener` to use pattern matching switch — adding a new event type will now fail to compile.
 
-- [ ] **3.2 — Fix `ItemDescription` null handling**
-  - **Files:** `ItemDescription.java`, all use case `toResponse()` methods
-  - **Problem:** `ItemName` rejects null; `ItemDescription` accepts it. Forces null checks like `item.getDescription() != null ? item.getDescription().value() : null` in 4 different `toResponse()` methods.
-  - **Fix:** Make `ItemDescription` non-nullable with empty string as default. Remove scattered null checks.
+- [x] **3.2 — Fix `ItemDescription` null handling**
+  - **Files:** `ItemDescription.java`, `ItemResponseMapper.java`, `ItemMapper.java`, `Item.java`, `ItemDomainEventListener.java`, `SearchItemsUseCaseTest.java`
+  - **Problem:** `ItemName` rejects null; `ItemDescription` accepts it. Forces null checks in 5 different locations.
+  - **Fix:** Made `ItemDescription` convert null to empty string. Added null guard in `Item` constructor. Removed all `item.getDescription() != null ? item.getDescription().value() : null` patterns — replaced with `item.getDescription().value()`. Updated test to verify empty string handling instead of null.
 
-- [ ] **3.3 — Enrich `Item` aggregate with business behavior**
+- [x] **3.3 — Enrich `Item` aggregate with business behavior**
   - **File:** `domain/aggregateroots/Item.java`
-  - **Problem:** The aggregate only has `updateDetails()` (simple setter with event) and `markAsDeleted()`. `Quantity.isGreaterThanZero()` is never called by the aggregate. Missing real domain logic.
-  - **Fix:** Add stock management methods:
+  - **Problem:** The aggregate only has `updateDetails()` and `markAsDeleted()`. Missing real domain logic.
+  - **Fix:** Added:
     - `increaseStock(Quantity amount)` — adds stock
     - `decreaseStock(Quantity amount)` — reduces stock with invariant: cannot go below zero
-    - `reserveStock(Quantity amount)` — reserves stock (if future orders context)
+    - `reserveStock(Quantity amount)` — reserves stock (delegates to decreaseStock; will track reservedQuantity separately when orders context is implemented)
 
-- [ ] **3.4 — Remove unused `@Setter` import from `BaseEntity.java`**
-  - **File:** `common/.../entity/BaseEntity.java` line 7
-  - **Fix:** Remove `import lombok.Setter;`
+- [x] **3.4 — Remove unused `@Setter` import from `BaseEntity.java`**
+  - **File:** `common/.../entity/BaseEntity.java`
+  - **Fix:** Removed `import lombok.Setter;` and `import lombok.EqualsAndHashCode;` (both unused).
 
 ### Phase 4: Testing
 

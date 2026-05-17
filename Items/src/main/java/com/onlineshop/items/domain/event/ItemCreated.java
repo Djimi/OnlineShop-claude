@@ -12,7 +12,7 @@ import lombok.ToString;
 @Getter
 @RequiredArgsConstructor
 @ToString(callSuper = true)
-public final class ItemCreated extends BaseDomainEvent {
+public final class ItemCreated extends BaseDomainEvent implements ItemDomainEvent {
 
     private final ItemId itemId;
     private final ItemName name;

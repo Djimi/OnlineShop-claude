@@ -16,6 +16,7 @@ import com.onlineshop.items.application.usecase.GetItemUseCase;
 import com.onlineshop.items.application.usecase.SearchItemsUseCase;
 import com.onlineshop.items.application.usecase.UpdateItemUseCase;
 import com.onlineshop.items.web.dto.CreateItemRequest;
+import com.onlineshop.items.web.dto.ItemResponse;
 import com.onlineshop.items.web.dto.UpdateItemRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,28 +52,33 @@ public class ItemsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<GetItemResponse>> getAllItems() {
-        return ResponseEntity.ok(getAllItemsUseCase.execute(new GetAllItemsQuery()));
+    public ResponseEntity<List<ItemResponse>> getAllItems() {
+        List<GetItemResponse> result = getAllItemsUseCase.execute(new GetAllItemsQuery());
+        return ResponseEntity.ok(result.stream().map(this::toItemResponse).toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GetItemResponse> getItemById(@PathVariable UUID id) {
-        return ResponseEntity.ok(getItemUseCase.execute(new GetItemQuery(id)));
+    public ResponseEntity<ItemResponse> getItemById(@PathVariable UUID id) {
+        GetItemResponse result = getItemUseCase.execute(new GetItemQuery(id));
+        return ResponseEntity.ok(toItemResponse(result));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<GetItemResponse>> searchItems(@RequestParam String description) {
-        return ResponseEntity.ok(searchItemsUseCase.execute(new SearchItemsByDescriptionQuery(description)));
+    public ResponseEntity<List<ItemResponse>> searchItems(@RequestParam String description) {
+        List<GetItemResponse> result = searchItemsUseCase.execute(new SearchItemsByDescriptionQuery(description));
+        return ResponseEntity.ok(result.stream().map(this::toItemResponse).toList());
     }
 
     @PostMapping
-    public ResponseEntity<CreateItemResponse> createItem(@RequestBody CreateItemRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(createItemUseCase.execute(toCommand(request)));
+    public ResponseEntity<ItemResponse> createItem(@RequestBody CreateItemRequest request) {
+        CreateItemResponse result = createItemUseCase.execute(toCommand(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(toItemResponse(result));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable UUID id, @RequestBody UpdateItemRequest request) {
-        return ResponseEntity.ok(updateItemUseCase.execute(toCommand(id, request)));
+    public ResponseEntity<ItemResponse> updateItem(@PathVariable UUID id, @RequestBody UpdateItemRequest request) {
+        UpdateItemResponse result = updateItemUseCase.execute(toCommand(id, request));
+        return ResponseEntity.ok(toItemResponse(result));
     }
 
     @DeleteMapping("/{id}")
@@ -96,5 +102,17 @@ public class ItemsController {
                 request.quantity(),
                 request.description()
         );
+    }
+
+    private ItemResponse toItemResponse(GetItemResponse dto) {
+        return new ItemResponse(dto.id(), dto.name(), dto.quantity(), dto.description());
+    }
+
+    private ItemResponse toItemResponse(CreateItemResponse dto) {
+        return new ItemResponse(dto.id(), dto.name(), dto.quantity(), dto.description());
+    }
+
+    private ItemResponse toItemResponse(UpdateItemResponse dto) {
+        return new ItemResponse(dto.id(), dto.name(), dto.quantity(), dto.description());
     }
 }

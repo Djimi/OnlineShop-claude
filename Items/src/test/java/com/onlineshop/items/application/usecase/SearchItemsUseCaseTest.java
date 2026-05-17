@@ -92,7 +92,7 @@ class SearchItemsUseCaseTest {
     }
 
     @Test
-    void execute_whenItemHasNullDescription_handlesGracefully() {
+    void execute_whenItemHasEmptyDescription_handlesGracefully() {
         String searchTerm = "mouse";
         UUID itemId = UUID.randomUUID();
 
@@ -100,11 +100,11 @@ class SearchItemsUseCaseTest {
                 new ItemId(itemId),
                 new ItemName("Wireless Mouse"),
                 new Quantity(20),
-                null
+                new ItemDescription("")
         );
 
         when(itemRepository.searchByDescription(searchTerm)).thenReturn(List.of(item));
-        when(mapper.toGetItemResponse(item)).thenReturn(new GetItemResponse(itemId, "Wireless Mouse", 20, null));
+        when(mapper.toGetItemResponse(item)).thenReturn(new GetItemResponse(itemId, "Wireless Mouse", 20, ""));
 
         SearchItemsByDescriptionQuery query = new SearchItemsByDescriptionQuery(searchTerm);
         List<GetItemResponse> responses = searchItemsUseCase.execute(query);
@@ -114,7 +114,7 @@ class SearchItemsUseCaseTest {
         assertThat(response.id()).isEqualTo(itemId);
         assertThat(response.name()).isEqualTo("Wireless Mouse");
         assertThat(response.quantity()).isEqualTo(20);
-        assertThat(response.description()).isNull();
+        assertThat(response.description()).isEmpty();
     }
 
     @Test

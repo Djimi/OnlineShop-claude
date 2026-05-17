@@ -19,7 +19,7 @@ public class ItemMapper {
             item.getId() != null ? item.getId().getValue() : null,
             item.getName().value(),
             item.getQuantity().amount(),
-            item.getDescription() != null ? item.getDescription().value() : null
+            item.getDescription().value()
         );
     }
 

@@ -25,7 +25,7 @@ public class Item extends AggregateRoot<ItemId> {
         validateInvariants(name, quantity);
         this.name = name;
         this.quantity = quantity;
-        this.description = description;
+        this.description = description != null ? description : new ItemDescription("");
     }
 
     /**
@@ -65,11 +65,38 @@ public class Item extends AggregateRoot<ItemId> {
         }
     }
 
-    /**
+/**
      * Marks the item as deleted. Registers ItemDeleted event.
      */
     public void markAsDeleted() {
         registerEvent(new ItemDeleted(getId()));
+    }
+
+    public void increaseStock(Quantity amount) {
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount to increase cannot be null");
+        }
+        this.quantity = new Quantity(this.quantity.amount() + amount.amount());
+    }
+
+    public void decreaseStock(Quantity amount) {
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount to decrease cannot be null");
+        }
+        int newAmount = this.quantity.amount() - amount.amount();
+        if (newAmount < 0) {
+            throw new IllegalStateException(
+                    "Insufficient stock: " + this.quantity.amount() + " available, " + amount.amount() + " requested");
+        }
+        this.quantity = new Quantity(newAmount);
+    }
+
+    /**
+     * Reserves stock for an order.
+     * Currently delegates to decreaseStock; will track reservedQuantity separately when orders context is implemented.
+     */
+    public void reserveStock(Quantity amount) {
+        decreaseStock(amount);
     }
 
     public ItemName getName() {

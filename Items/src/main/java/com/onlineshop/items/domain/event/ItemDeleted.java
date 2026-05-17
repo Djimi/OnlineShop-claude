@@ -9,7 +9,7 @@ import lombok.ToString;
 @Getter
 @RequiredArgsConstructor
 @ToString(callSuper = true)
-public final class ItemDeleted extends BaseDomainEvent {
+public final class ItemDeleted extends BaseDomainEvent implements ItemDomainEvent {
 
     private final ItemId itemId;
 }
