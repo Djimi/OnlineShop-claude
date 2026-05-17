@@ -15,10 +15,11 @@ import com.onlineshop.items.application.usecase.GetAllItemsUseCase;
 import com.onlineshop.items.application.usecase.GetItemUseCase;
 import com.onlineshop.items.application.usecase.SearchItemsUseCase;
 import com.onlineshop.items.application.usecase.UpdateItemUseCase;
+import com.onlineshop.items.web.dto.CreateItemRequest;
+import com.onlineshop.items.web.dto.UpdateItemRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,23 +66,35 @@ public class ItemsController {
     }
 
     @PostMapping
-    public ResponseEntity<CreateItemResponse> createItem(@RequestBody CreateItemCommand command) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(createItemUseCase.execute(command));
+    public ResponseEntity<CreateItemResponse> createItem(@RequestBody CreateItemRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(createItemUseCase.execute(toCommand(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable UUID id, @RequestBody UpdateItemCommand command) {
-        if (!id.equals(command.id())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Path id " + id + " does not match request body id " + command.id());
-        }
-        return ResponseEntity.ok(updateItemUseCase.execute(command));
+    public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable UUID id, @RequestBody UpdateItemRequest request) {
+        return ResponseEntity.ok(updateItemUseCase.execute(toCommand(id, request)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable UUID id) {
         deleteItemUseCase.execute(new DeleteItemCommand(id));
         return ResponseEntity.noContent().build();
+    }
+
+    private CreateItemCommand toCommand(CreateItemRequest request) {
+        return new CreateItemCommand(
+                request.name(),
+                request.quantity(),
+                request.description()
+        );
+    }
+
+    private UpdateItemCommand toCommand(UUID id, UpdateItemRequest request) {
+        return new UpdateItemCommand(
+                id,
+                request.name(),
+                request.quantity(),
+                request.description()
+        );
     }
 }

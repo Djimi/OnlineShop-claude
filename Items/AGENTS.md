@@ -22,10 +22,10 @@ The Items service manages product inventory and search:
 ```
 Items/
 ├── src/main/java/com/onlineshop/items/
-│   ├── application/     # Use cases, commands, queries, DTOs
-│   ├── domain/          # Domain models, exceptions, and interfaces
+│   ├── application/     # Use cases, commands, queries, DTOs, events, mappers
+│   ├── domain/          # Domain models, value objects, exceptions, and interfaces
 │   ├── infrastructure/  # Persistence and integrations
-│   ├── web/             # REST controllers
+│   ├── web/             # REST controllers and request/response DTOs
 │   └── ItemsApplication.java
 ├── init-db/             # Database initialization scripts
 └── pom.xml

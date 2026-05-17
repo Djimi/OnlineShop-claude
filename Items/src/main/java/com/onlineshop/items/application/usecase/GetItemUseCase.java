@@ -1,24 +1,24 @@
 package com.onlineshop.items.application.usecase;
 
-import com.onlineshop.common.domain.valueobject.ItemId;
 import com.onlineshop.items.application.dto.GetItemResponse;
+import com.onlineshop.items.application.dto.mapper.ItemResponseMapper;
 import com.onlineshop.items.application.query.GetItemQuery;
 import com.onlineshop.items.domain.aggregateroots.Item;
-import com.onlineshop.items.domain.repository.ItemRepository;
 import com.onlineshop.items.domain.exception.ItemNotFoundException;
+import com.onlineshop.items.domain.repository.ItemRepository;
+import com.onlineshop.items.domain.valueobject.ItemId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use case for retrieving a single item by ID.
- */
 @Service
 public class GetItemUseCase {
 
     private final ItemRepository itemRepository;
+    private final ItemResponseMapper mapper;
 
-    public GetItemUseCase(ItemRepository itemRepository) {
+    public GetItemUseCase(ItemRepository itemRepository, ItemResponseMapper mapper) {
         this.itemRepository = itemRepository;
+        this.mapper = mapper;
     }
 
     @Transactional(readOnly = true)
@@ -27,15 +27,6 @@ public class GetItemUseCase {
         Item item = itemRepository.findById(itemId)
             .orElseThrow(() -> new ItemNotFoundException(query.id()));
 
-        return toResponse(item);
-    }
-
-    private GetItemResponse toResponse(Item item) {
-        return new GetItemResponse(
-            item.getId() != null ? item.getId().getValue() : null,
-            item.getName().value(),
-            item.getQuantity().amount(),
-            item.getDescription() != null ? item.getDescription().value() : null
-        );
+        return mapper.toGetItemResponse(item);
     }
 }

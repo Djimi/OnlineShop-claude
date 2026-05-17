@@ -44,24 +44,23 @@ The service has solid DDD scaffolding — proper aggregate roots, value objects,
 
 ### Phase 2: Architecture Cleanup
 
-- [ ] **2.1 — Implement domain event handler(s)**
-  - **Problem:** Domain events are published via `ApplicationEventPublisher` in every command use case, but there is not a single `@EventListener` or `@TransactionalEventListener` anywhere.
-  - **Fix:** Add at least one listener (e.g., structured logging listener via `@TransactionalEventListener(phase = AFTER_COMMIT)`) to prove the pipeline works. This validates the entire flow: `AggregateRoot.registerEvent()` → `events.clear()` → `ApplicationEventPublisher.publishEvent()`.
+- [x] **2.1 — Implement domain event handler(s)**
+  - **Fix:** Added `application/event/ItemDomainEventListener.java` with `@TransactionalEventListener(phase = AFTER_COMMIT)` methods for `ItemCreated`, `ItemUpdated`, and `ItemDeleted`. Validates the full event pipeline: `AggregateRoot.registerEvent()` → `ApplicationEventPublisher.publishEvent()` → `@TransactionalEventListener`.
 
-- [ ] **2.2 — Create separate web DTOs for requests**
-  - **Files:** `ItemsController.java`, command classes in `application/command/`
-  - **Problem:** `CreateItemCommand` and `UpdateItemCommand` are used directly as `@RequestBody` in the controller. Web DTOs (serialization concerns, validation annotations, OpenAPI docs) should be separate from application commands (use case semantics).
-  - **Fix:** Create `web/dto/CreateItemRequest.java` and `web/dto/UpdateItemRequest.java`. Controller accepts these, maps to application commands in a private mapper method.
+- [x] **2.2 — Create separate web DTOs for requests**
+  - **Files:** `ItemsController.java`, `web/dto/CreateItemRequest.java`, `web/dto/UpdateItemRequest.java`
+  - **Problem:** `CreateItemCommand` and `UpdateItemCommand` were used directly as `@RequestBody` in the controller.
+  - **Fix:** Created `web/dto/CreateItemRequest.java` and `web/dto/UpdateItemRequest.java`. Controller accepts these, maps to commands via private `toCommand()` methods. `UpdateItemRequest` no longer carries an `id` field — the path variable is used directly, eliminating the need for the Phase 1.1 validation.
 
-- [ ] **2.3 — Move Item-specific value objects from `common` to `Items`**
+- [x] **2.3 — Move Item-specific value objects from `common` to `Items`**
   - **Files:** `common/.../valueobject/ItemId.java`, `ItemName.java`, `ItemDescription.java`, `Quantity.java`
-  - **Problem:** The `common` library contains Items-bounded-context-specific value objects. Other services depending on `common` would transitively receive these — a bounded context violation.
-  - **Fix:** Relocate VOs to `Items/src/main/java/com/onlineshop/items/domain/valueobject/`. Keep only `BaseId`, `BaseEntity`, `AggregateRoot`, `DomainEvent`, `BaseDomainEvent` in `common`.
+  - **Problem:** Items-bounded-context-specific VOs leaked into `common` library.
+  - **Fix:** Relocated VOs to `Items/src/main/java/com/onlineshop/items/domain/valueobject/`. Updated all 12 import references across Items service. Removed the 4 files from `common`. Kept `BaseId`, `BaseEntity`, `AggregateRoot`, `DomainEvent`, `BaseDomainEvent` in `common`.
 
-- [ ] **2.4 — Extract `toResponse()` mappers from use cases**
-  - **Files:** All use case classes in `application/usecase/`
-  - **Problem:** Use cases mix orchestration logic with DTO mapping logic (`private toResponse()` methods). This makes mapping hard to test and violates SRP.
-  - **Fix:** Extract mapping to dedicated mapper classes (e.g., `application/dto/mapper/ItemResponseMapper.java`).
+- [x] **2.4 — Extract `toResponse()` mappers from use cases**
+  - **Files:** All use case classes in `application/usecase/`, `application/dto/mapper/ItemResponseMapper.java`
+  - **Problem:** Use cases mixed orchestration with DTO mapping — duplicated `toResponse()` in 5 use cases.
+  - **Fix:** Created `application/dto/mapper/ItemResponseMapper.java` with `toCreateItemResponse()`, `toUpdateItemResponse()`, `toGetItemResponse()`. Injected into all 5 use cases via constructor. Removed all private `toResponse()` methods. Updated `SearchItemsUseCaseTest` for the new constructor dependency.
 
 ### Phase 3: Domain Depth
 
