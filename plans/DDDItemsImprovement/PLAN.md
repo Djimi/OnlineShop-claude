@@ -88,7 +88,7 @@ The service has solid DDD scaffolding — proper aggregate roots, value objects,
 
 ### Phase 4: Testing
 
-- [ ] **4.1 — Add domain unit tests**
+- [x] **4.1 — Add domain unit tests**
   - Test `Item` aggregate behavior: factory creation, state transitions (`updateDetails`, `markAsDeleted`), event registration
   - Test value object validation: `ItemName`, `ItemDescription`, `Quantity` boundary cases
   - Test domain event structure
