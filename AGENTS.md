@@ -5,14 +5,19 @@
 ---
 
 ## IMPORTANT: Your role
-You are staff engineer with a lot of experience and always propose modern architectural and technological approaches. When there are multiple solutions which are all great, you explain them and ask which one should be used 
+You are staff engineer with a lot of experience and always propose modern architectural and technological approaches. When there are multiple solutions which are all great, you explain them and ask which one should be used.
 
 ---
 
-## IMPORTANT: Documentation Maintenance
+## Core Principles
 
-**When making ANY changes to the project, thread each project as separate microservice, so they are ABSOLUTELY independent and only know about each other on architectural level.
-On each change you MUST update the files related to the respective microservices in the following way:**
+See [docs/CORE_PRINCIPLES.md](./docs/CORE_PRINCIPLES.md) (always read that file!):
+
+
+## : Documentation Maintenance
+
+**When making ANY changes to the project, thread each project as separate m
+On each change you MUST update the files related to the respective micricroservice, so they are ABSOLUTELY independent and only know about each other on architectural level.oservices in the following way:**
 
 1. This file (`AGENTS.md`) if the change affects project-wide documentation
 2. All referenced documentation files affected by the change (see sections below)
@@ -23,7 +28,7 @@ On each change you MUST update the files related to the respective microservices
 
 ---
 
-## IMPORTANT: Maven usage
+## Maven usage
 When using Maven commands you MUST use the Maven wrapper inside the project you are working on!
 
 ## Quick Reference
@@ -35,56 +40,16 @@ See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) (always read that f
 ## Maven Build Dependencies & Parallel Builds
 
 ### Dependency Graph
+Auth - no dependencies on other projects
+api-gateway - no dependencies on other projects
+Items - depends on `common` (uses shared models/utilities)
+common - no dependencies on other projects
+e2e-tests - not part of the build graph (contains only tests, build separately when needed)
+frontend - not part of the build graph (separate React app, build separately when needed)
 
-```
-  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-  │     Auth     │      │   common     │      │  api-gateway │
-  └──────────────┘      └──────┬───────┘      └──────────────┘
-                               │
-                               │ depends on
-                               ▼
-                        ┌──────────────┐
-                        │    Items     │
-                        └──────────────┘
-```
+### Parallel Build Strategy for agents
 
-`e2e-tests` - not part of the build graph (contains only tests, build separately when needed)
-
-### IMPORTANT: Parallel Build Strategy for agents
-
-When asked to build multiple projects, **analyze the dependency graph above** and:
-
-1. **Identify independent projects** (no arrows pointing into them) → start all as **parallel background tasks**
-2. **Wait for dependencies** → when a project has arrows pointing into it, wait for those source projects to complete first
-
-**Example for "build all"** (based on current graph):
-```
-# Phase 1: Independent projects (parallel background tasks)
-Auth        → background task
-common      → background task
-api-gateway → background task
-
-# Phase 2: Projects with dependencies (after their dependencies complete)
-Items       → background task (after common completes)
-```
-
-> **Note:** This example reflects the current dependency graph. If dependencies change,
-> derive the build order from the updated graph - don't follow this example blindly.
-
-### Single Project Build Rules
-
-When building a **single project**, first build all its transitive dependencies:
-- "build Items" → build `common` first, then `Items`
-- "build Auth" → just `Auth` (no dependencies)
-
-## Core Principles
-
-See [docs/CORE_PRINCIPLES.md](./docs/CORE_PRINCIPLES.md) for (always read that file!):
-- Development philosophy (High Abstraction, Latest Technologies)
-- Code quality rules (testing coverage, comments policy, security)
-- Design patterns guidance
-- Efficiency guidelines for agents
-- Communication style
+When asked to build multiple projects, **analyze the dependency graph above** and run builds in parallel whenever possible to save time.
 
 ## Git Workflow
 
