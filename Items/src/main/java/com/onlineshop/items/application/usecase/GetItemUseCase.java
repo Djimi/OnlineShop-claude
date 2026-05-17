@@ -5,7 +5,7 @@ import com.onlineshop.items.application.dto.GetItemResponse;
 import com.onlineshop.items.application.query.GetItemQuery;
 import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
-import com.onlineshop.items.web.exception.ItemNotFoundException;
+import com.onlineshop.items.domain.exception.ItemNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

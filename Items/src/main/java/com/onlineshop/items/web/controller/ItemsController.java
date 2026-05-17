@@ -1,6 +1,7 @@
 package com.onlineshop.items.web.controller;
 
 import com.onlineshop.items.application.command.CreateItemCommand;
+import com.onlineshop.items.application.command.DeleteItemCommand;
 import com.onlineshop.items.application.command.UpdateItemCommand;
 import com.onlineshop.items.application.dto.CreateItemResponse;
 import com.onlineshop.items.application.dto.GetItemResponse;
@@ -9,6 +10,7 @@ import com.onlineshop.items.application.query.GetAllItemsQuery;
 import com.onlineshop.items.application.query.GetItemQuery;
 import com.onlineshop.items.application.query.SearchItemsByDescriptionQuery;
 import com.onlineshop.items.application.usecase.CreateItemUseCase;
+import com.onlineshop.items.application.usecase.DeleteItemUseCase;
 import com.onlineshop.items.application.usecase.GetAllItemsUseCase;
 import com.onlineshop.items.application.usecase.GetItemUseCase;
 import com.onlineshop.items.application.usecase.SearchItemsUseCase;
@@ -16,6 +18,7 @@ import com.onlineshop.items.application.usecase.UpdateItemUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +29,7 @@ public class ItemsController {
 
     private final CreateItemUseCase createItemUseCase;
     private final UpdateItemUseCase updateItemUseCase;
+    private final DeleteItemUseCase deleteItemUseCase;
     private final GetItemUseCase getItemUseCase;
     private final GetAllItemsUseCase getAllItemsUseCase;
     private final SearchItemsUseCase searchItemsUseCase;
@@ -33,11 +37,13 @@ public class ItemsController {
     public ItemsController(
             CreateItemUseCase createItemUseCase,
             UpdateItemUseCase updateItemUseCase,
+            DeleteItemUseCase deleteItemUseCase,
             GetItemUseCase getItemUseCase,
             GetAllItemsUseCase getAllItemsUseCase,
             SearchItemsUseCase searchItemsUseCase) {
         this.createItemUseCase = createItemUseCase;
         this.updateItemUseCase = updateItemUseCase;
+        this.deleteItemUseCase = deleteItemUseCase;
         this.getItemUseCase = getItemUseCase;
         this.getAllItemsUseCase = getAllItemsUseCase;
         this.searchItemsUseCase = searchItemsUseCase;
@@ -65,6 +71,17 @@ public class ItemsController {
 
     @PutMapping("/{id}")
     public ResponseEntity<UpdateItemResponse> updateItem(@PathVariable UUID id, @RequestBody UpdateItemCommand command) {
+        if (!id.equals(command.id())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Path id " + id + " does not match request body id " + command.id());
+        }
         return ResponseEntity.ok(updateItemUseCase.execute(command));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteItem(@PathVariable UUID id) {
+        deleteItemUseCase.execute(new DeleteItemCommand(id));
+        return ResponseEntity.noContent().build();
     }
 }

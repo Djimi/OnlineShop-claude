@@ -8,7 +8,7 @@ import com.onlineshop.items.application.command.UpdateItemCommand;
 import com.onlineshop.items.application.dto.UpdateItemResponse;
 import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
-import com.onlineshop.items.web.exception.ItemNotFoundException;
+import com.onlineshop.items.domain.exception.ItemNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;

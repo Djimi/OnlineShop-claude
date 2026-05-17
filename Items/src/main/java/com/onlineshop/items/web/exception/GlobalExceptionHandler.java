@@ -1,5 +1,6 @@
 package com.onlineshop.items.web.exception;
 
+import com.onlineshop.items.domain.exception.ItemNotFoundException;
 import com.onlineshop.items.web.dto.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,14 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Global exception handler for REST API
- * Follows RFC 7807 (Problem Details for HTTP APIs)
- *
- * Security: Custom exceptions expose their message to clients (they contain safe, pre-defined messages).
- * Generic exceptions do not expose their message to prevent leaking internal details.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -36,11 +31,25 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+            ResponseStatusException ex,
+            WebRequest request) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("https://api.example.com/errors/bad-request")
+                .title("Bad Request")
+                .status(HttpStatus.BAD_REQUEST.value())
+                .detail(ex.getMessage())
+                .instance(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
             WebRequest request) {
-        // Log the actual exception for debugging
         logger.error("Unexpected error occurred", ex);
 
         ErrorResponse errorResponse = ErrorResponse.builder()
