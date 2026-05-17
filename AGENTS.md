@@ -137,6 +137,7 @@ See [docs/API_DESIGN.md](./docs/API_DESIGN.md) for:
 - Styling (Tailwind): order classes by layout → sizing → typography → colors → effects → states; use `cn()` for conditional classes.
 
 ## Testing Strategy
+ALWAYS read this file before designing or writing tests!
 
 See [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md) for:
 - When to run tests

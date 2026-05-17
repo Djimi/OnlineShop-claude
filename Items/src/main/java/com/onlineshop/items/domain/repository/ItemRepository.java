@@ -1,6 +1,6 @@
 package com.onlineshop.items.domain.repository;
 
-import com.onlineshop.common.domain.valueobject.ItemId;
+import com.onlineshop.items.domain.valueobject.ItemId;
 import com.onlineshop.items.domain.aggregateroots.Item;
 
 import java.util.List;

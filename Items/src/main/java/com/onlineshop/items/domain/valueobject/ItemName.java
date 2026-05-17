@@ -1,4 +1,4 @@
-package com.onlineshop.common.domain.valueobject;
+package com.onlineshop.items.domain.valueobject;
 
 public record ItemName(String value) {
 

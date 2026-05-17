@@ -1,23 +1,21 @@
 package com.onlineshop.items.application.usecase;
 
-import com.onlineshop.common.domain.valueobject.ItemDescription;
-import com.onlineshop.common.domain.valueobject.ItemId;
-import com.onlineshop.common.domain.valueobject.ItemName;
-import com.onlineshop.common.domain.valueobject.Quantity;
 import com.onlineshop.items.application.command.UpdateItemCommand;
 import com.onlineshop.items.application.dto.UpdateItemResponse;
+import com.onlineshop.items.application.dto.mapper.ItemResponseMapper;
 import com.onlineshop.items.domain.aggregateroots.Item;
+import com.onlineshop.items.domain.exception.ItemNotFoundException;
 import com.onlineshop.items.domain.repository.ItemRepository;
-import com.onlineshop.items.web.exception.ItemNotFoundException;
+import com.onlineshop.items.domain.valueobject.ItemDescription;
+import com.onlineshop.items.domain.valueobject.ItemId;
+import com.onlineshop.items.domain.valueobject.ItemName;
+import com.onlineshop.items.domain.valueobject.Quantity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use case for updating an existing item.
- */
 @Service
 public class UpdateItemUseCase {
 
@@ -25,10 +23,13 @@ public class UpdateItemUseCase {
 
     private final ItemRepository itemRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ItemResponseMapper mapper;
 
-    public UpdateItemUseCase(ItemRepository itemRepository, ApplicationEventPublisher eventPublisher) {
+    public UpdateItemUseCase(ItemRepository itemRepository, ApplicationEventPublisher eventPublisher,
+                             ItemResponseMapper mapper) {
         this.itemRepository = itemRepository;
         this.eventPublisher = eventPublisher;
+        this.mapper = mapper;
     }
 
     @Transactional
@@ -47,7 +48,7 @@ public class UpdateItemUseCase {
 
         publishDomainEvents(savedItem);
 
-        return toResponse(savedItem);
+        return mapper.toUpdateItemResponse(savedItem);
     }
 
     private void publishDomainEvents(Item item) {
@@ -56,14 +57,5 @@ public class UpdateItemUseCase {
             eventPublisher.publishEvent(event);
         });
         item.clearDomainEvents();
-    }
-
-    private UpdateItemResponse toResponse(Item item) {
-        return new UpdateItemResponse(
-            item.getId() != null ? item.getId().getValue() : null,
-            item.getName().value(),
-            item.getQuantity().amount(),
-            item.getDescription() != null ? item.getDescription().value() : null
-        );
     }
 }

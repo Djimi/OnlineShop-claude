@@ -13,7 +13,7 @@
 ## Service Overview
 
 The Items service manages product inventory and search:
-- Item creation and updates
+- Item creation, updates, and deletion
 - Item lookup by id
 - Item listing and description search
 
@@ -22,10 +22,10 @@ The Items service manages product inventory and search:
 ```
 Items/
 ├── src/main/java/com/onlineshop/items/
-│   ├── application/     # Use cases, commands, queries, DTOs
-│   ├── domain/          # Domain models and interfaces
+│   ├── application/     # Use cases, commands, queries, DTOs, events, mappers
+│   ├── domain/          # Domain models, value objects, exceptions, and interfaces
 │   ├── infrastructure/  # Persistence and integrations
-│   ├── web/             # REST controllers
+│   ├── web/             # REST controllers and request/response DTOs
 │   └── ItemsApplication.java
 ├── init-db/             # Database initialization scripts
 └── pom.xml
@@ -40,6 +40,7 @@ Items/
 | GET | `/api/v1/items/search?description=...` | Search items by description |
 | POST | `/api/v1/items` | Create new item |
 | PUT | `/api/v1/items/{id}` | Update existing item |
+| DELETE | `/api/v1/items/{id}` | Delete item |
 
 ## Database
 

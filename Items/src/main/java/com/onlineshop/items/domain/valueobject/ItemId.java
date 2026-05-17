@@ -1,4 +1,6 @@
-package com.onlineshop.common.domain.valueobject;
+package com.onlineshop.items.domain.valueobject;
+
+import com.onlineshop.common.domain.valueobject.BaseId;
 
 import java.util.UUID;
 

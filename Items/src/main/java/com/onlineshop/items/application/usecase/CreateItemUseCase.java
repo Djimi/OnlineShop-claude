@@ -1,23 +1,21 @@
 package com.onlineshop.items.application.usecase;
 
-import com.onlineshop.common.domain.valueobject.ItemDescription;
-import com.onlineshop.common.domain.valueobject.ItemId;
-import com.onlineshop.common.domain.valueobject.ItemName;
-import com.onlineshop.common.domain.valueobject.Quantity;
 import com.onlineshop.items.application.command.CreateItemCommand;
 import com.onlineshop.items.application.dto.CreateItemResponse;
+import com.onlineshop.items.application.dto.mapper.ItemResponseMapper;
 import com.onlineshop.items.domain.aggregateroots.Item;
 import com.onlineshop.items.domain.repository.ItemRepository;
 import com.onlineshop.items.domain.service.IdGenerator;
+import com.onlineshop.items.domain.valueobject.ItemDescription;
+import com.onlineshop.items.domain.valueobject.ItemId;
+import com.onlineshop.items.domain.valueobject.ItemName;
+import com.onlineshop.items.domain.valueobject.Quantity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use case for creating a new item.
- */
 @Service
 public class CreateItemUseCase {
 
@@ -26,12 +24,14 @@ public class CreateItemUseCase {
     private final ItemRepository itemRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final IdGenerator idGenerator;
+    private final ItemResponseMapper mapper;
 
     public CreateItemUseCase(ItemRepository itemRepository, ApplicationEventPublisher eventPublisher,
-                             IdGenerator idGenerator) {
+                             IdGenerator idGenerator, ItemResponseMapper mapper) {
         this.itemRepository = itemRepository;
         this.eventPublisher = eventPublisher;
         this.idGenerator = idGenerator;
+        this.mapper = mapper;
     }
 
     @Transactional
@@ -46,7 +46,7 @@ public class CreateItemUseCase {
 
         publishDomainEvents(savedItem);
 
-        return toResponse(savedItem);
+        return mapper.toCreateItemResponse(savedItem);
     }
 
     private void publishDomainEvents(Item item) {
@@ -55,14 +55,5 @@ public class CreateItemUseCase {
             eventPublisher.publishEvent(event);
         });
         item.clearDomainEvents();
-    }
-
-    private CreateItemResponse toResponse(Item item) {
-        return new CreateItemResponse(
-            item.getId() != null ? item.getId().getValue() : null,
-            item.getName().value(),
-            item.getQuantity().amount(),
-            item.getDescription() != null ? item.getDescription().value() : null
-        );
     }
 }
