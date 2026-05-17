@@ -58,7 +58,15 @@ Validate complete user journeys through the running system. Expensive to write a
 ### Why 90% Coverage Target (Not 100%)
 100% creates perverse incentives—testing trivial code to hit a number. 90% ensures meaningful coverage while allowing pragmatic exclusions (DTOs, configuration classes, Spring Boot main classes).
 
-### Why Testcontainers Over H2
+### Spring Boot 4 Web Testing Constraints
++
++Spring Boot 4.0.2 / Spring Framework 7 removed **all web test slice annotations** (`@WebMvcTest`, `@AutoConfigureMockMvc`) and **`@MockBean`** from `spring-boot-test-autoconfigure`. `MockMvc` was also removed from `spring-test`.
++
++Available testing approaches for controllers:
++- **`@SpringBootTest(webEnvironment = RANDOM_PORT)` + Testcontainers + `RestTemplate`** — Preferred for E2E coverage. Tests the full HTTP → controller → use case → repository → DB stack.
++- **`@SpringBootTest` + `@MockitoBean`** (from `org.springframework.test.context.bean.override.mockito.MockitoBean`) + `MockMvcBuilders.webAppContextSetup()` — For error/corner cases that are hard to trigger via E2E.
++
++### Why Testcontainers Over H2
 H2 lies. It behaves differently than PostgreSQL for JSON columns, array types, and query edge cases. Testcontainers runs the real database—if tests pass, production will work. The few seconds of startup time prevent hours of debugging.
 
 ### Why REST Assured for E2E

@@ -47,6 +47,19 @@ Items/
 - Schema: [init-db/01-schema.sql](./init-db/01-schema.sql)
 - Seed data: [init-db/02-data.sql](./init-db/02-data.sql)
 
+## Testing
+
+**48 tests total** — 0 failures (Phase 4 complete).
+
+| Layer | Test File | Approach | Tests |
+|-------|-----------|----------|-------|
+| Domain | `domain/ItemTest`, `ValueObjectTest` | JUnit 5 + AssertJ (no Spring) | 37 |
+| Application | `application/usecase/UseCaseIntegrationTest` | `@SpringBootTest(NONE)` + Testcontainers | 6 |
+| Application | `application/usecase/SearchItemsUseCaseTest` | JUnit 5 + Mockito | 4 |
+| Web | `web/controller/ItemsControllerE2eTest` | `@SpringBootTest(RANDOM_PORT)` + Testcontainers + `RestTemplate` | 7 |
+
+> **Important:** Spring Boot 4.0.2 removed `@WebMvcTest`, `@MockBean`, and `MockMvc`. Controller testing uses `@SpringBootTest(webEnvironment = RANDOM_PORT)` + Testcontainers. For corner cases not covered by E2E, use `@MockitoBean` from `org.springframework.test.context.bean.override.mockito.MockitoBean`.
+
 ## Configuration
 
 Main configuration: [src/main/resources/application.yml](./src/main/resources/application.yml)
