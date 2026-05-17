@@ -94,9 +94,9 @@ The service has solid DDD scaffolding — proper aggregate roots, value objects,
   - Test domain event structure
   - **No Spring context** — pure JUnit 5 + AssertJ
 
-- [ ] **4.2 — Add use case integration tests**
+- [x] **4.2 — Add use case integration tests**
   - Test `CreateItemUseCase`, `UpdateItemUseCase`, `DeleteItemUseCase`
-  - Use `@DataJpaTest` with in-memory DB or Testcontainers (PostgreSQL parity)
+  - Use `@SpringBootTest` with Testcontainers (PostgreSQL 18)
   - Verify events are published and persisted correctly
 
 - [ ] **4.3 — Add controller integration tests**
