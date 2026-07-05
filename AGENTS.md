@@ -16,8 +16,8 @@ See [docs/CORE_PRINCIPLES.md](./docs/CORE_PRINCIPLES.md) (always read that file!
 
 ## : Documentation Maintenance
 
-**When making ANY changes to the project, thread each project as separate m
-On each change you MUST update the files related to the respective micricroservice, so they are ABSOLUTELY independent and only know about each other on architectural level.oservices in the following way:**
+**When making ANY changes to the project, treat each microservice as a separate module.
+On each change you MUST update the files related to the respective microservice, so they are ABSOLUTELY independent and only know about each other on an architectural level.**
 
 1. This file (`AGENTS.md`) if the change affects project-wide documentation
 2. All referenced documentation files affected by the change (see sections below)
@@ -29,7 +29,19 @@ On each change you MUST update the files related to the respective micricroservi
 ---
 
 ## Maven usage
-When using Maven commands you MUST use the Maven wrapper inside the project you are working on!
+When using Maven commands you MUST use the Maven wrapper (`./mvnw`) inside the service you are working on — never from a parent or sibling directory. Always run from the target service's root folder (e.g., `Items/`, `Auth/`).
+
+## File Operations
+- **Delete files** using the Write tool (write empty content) or Edit tool — never use bash `rm`.
+- **Create/rename directories** using the Write tool with the target file path — never use `mkdir` or `mv`.
+- **NEVER run `rm -rf` or `rm -f`** on ANY project-related path. If you accidentally create a file at the wrong path, use the Write tool to clean it up, or ask the user.
+- When writing new files, **double-check the file path** — confirm it's under the correct project root before saving.
+
+## Before Committing
+**ALWAYS run tests first** — see [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md) for which tests to run. Never commit without passing tests.
+1. Run unit + integration tests for the affected service from its directory: `./mvnw clean test`
+2. If available, also run E2E tests from `e2e-tests/`: `./mvnw clean test`
+3. Only commit if ALL tests pass.
 
 ## Quick Reference
 

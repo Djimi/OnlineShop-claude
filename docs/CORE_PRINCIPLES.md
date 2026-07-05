@@ -32,8 +32,14 @@ Always strive for highly abstract and easily testable code.
 ## When Making Changes
 
 1. **Update all related files:** docker compose, tests, architecture docs, ADRs if needed
-2. **Run all tests:** Unit, integration, e2e before considering done. Refer to [TESTING_STRATEGY.md](./TESTING_STRATEGY.md)
+2. **Run all tests before committing:** Unit, integration, e2e. Refer to [TESTING_STRATEGY.md](./TESTING_STRATEGY.md). This is NOT optional — never skip tests.
 3. **E2E prerequisite:** Check if docker compose is running, start if not
+
+## Critical Rules for Agents
+
+1. **Maven directory:** Always run `./mvnw` from the target service's root directory (e.g., `Items/`, `Auth/`). Never use `-f ../X/pom.xml` from a sibling directory.
+2. **File deletion:** NEVER use `rm` or `rm -rf` for project files. Use the Write tool (empty content) or Edit tool instead.
+3. **Pre-commit checklist:** Run tests → verify they pass → only then commit.
 
 ## Efficiency Guidelines for agents:
 

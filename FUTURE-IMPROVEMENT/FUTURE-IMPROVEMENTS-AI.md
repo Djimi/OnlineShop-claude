@@ -21,8 +21,17 @@ Check context
 color for different subagents
 
 Plugins
+swarms?
+Agent orchestration
+https://github.com/ComposioHQ/agent-orchestrator/
+https://www.reddit.com/r/ClaudeAI/comments/1pu51t7/the_best_mcp_servers_that_actually_can_change_how/
 
+kilocode
 
+Oh my open code
+
+copilot terminal vs VScode
+MCP
 --------------
 
 AGENTS.md
