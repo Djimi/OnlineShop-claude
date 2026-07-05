@@ -89,6 +89,18 @@ Items/
 2. Run E2E tests if available: `./mvnw clean test` from `e2e-tests/` directory
 3. Only commit if ALL tests pass
 
+### JaCoCo Coverage Exclusions
+
+Packages excluded from coverage (no unit-testable logic):
+- `**/config/**`, `**/*Application.*` — Spring config and bootstrap
+- `**/dto/**`, `**/command/**`, `**/query/**` — Data records
+- `**/entity/**` — JPA entities only (infrastructure layer). Domain entities ARE tested.
+- `**/web/**` — Controllers, exception handlers (integration-test territory)
+- `**/infrastructure/**` — Adapters, mappers (integration-test territory)
+
+### Unit Test Patterns
+- Assert event properties, not just types. `isInstanceOf` alone is insufficient — the right event type with wrong data is still a bug.
+
 ### Integration test requirements:
 - **Use Testcontainers** with PostgreSQL (version matching `docker-compose.yml`). Never use H2.
 - **Check ALL side effects** when testing CRUD operations:

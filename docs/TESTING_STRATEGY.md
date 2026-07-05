@@ -54,6 +54,8 @@
 ### Unit Tests
 Test business logic in isolation. Mock all dependencies. These are your primary safety net—fast, focused, and numerous. Test edge cases, validation rules, and error handling. Don't test simple getters/setters or framework code.
 
+**Domain events:** When testing code that emits domain events, assert event properties — never only the event type. The right event type with wrong data is still a bug.
+
 ### Integration Tests
 Verify components work together with real dependencies. Use Testcontainers for PostgreSQL and Redis—never H2 or in-memory substitutes. Test repository queries, controller request handling, and database constraints. These catch issues unit tests miss.
 
@@ -85,7 +87,11 @@ Excluded from coverage measurement (see `pom.xml` JaCoCo config):
 - `**/config/**` — Spring configuration classes
 - `**/*Application.*` — Main class bootstrap
 - `**/dto/**` — Data transfer objects (no logic)
-- `**/entity/**` — JPA entities (framework-managed)
+- `**/entity/**` — JPA entities only (infrastructure persistence layer). Domain entities in `domain.aggregateroots` ARE tested.
+- `**/command/**` — Command objects (pure records, no logic)
+- `**/query/**` — Query objects (pure records, no logic)
+- `**/web/**` — Controllers, exception handlers (require integration tests with Spring context)
+- `**/infrastructure/**` — JPA adapters, ID generators, mappers (require integration tests with real DB)
 
 ## Test Naming Convention
 

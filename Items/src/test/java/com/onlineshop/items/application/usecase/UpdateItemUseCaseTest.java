@@ -12,6 +12,8 @@ import com.onlineshop.items.domain.repository.ItemRepository;
 import com.onlineshop.items.web.exception.ItemNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,6 +41,9 @@ class UpdateItemUseCaseTest {
     @InjectMocks
     private UpdateItemUseCase updateItemUseCase;
 
+    @Captor
+    private ArgumentCaptor<ItemUpdated> itemUpdatedCaptor;
+
     @Test
     void execute_whenItemFoundAndChanged_updatesAndPublishesEvent() {
         UUID itemId = UUID.randomUUID();
@@ -59,7 +64,13 @@ class UpdateItemUseCaseTest {
         assertThat(response.quantity()).isEqualTo(10);
         assertThat(response.description()).isEqualTo("New description");
 
-        verify(eventPublisher).publishEvent(any(ItemUpdated.class));
+        verify(eventPublisher).publishEvent(itemUpdatedCaptor.capture());
+
+        ItemUpdated event = itemUpdatedCaptor.getValue();
+        assertThat(event.getItemId().getValue()).isEqualTo(itemId);
+        assertThat(event.getName().value()).isEqualTo("New Name");
+        assertThat(event.getQuantity().amount()).isEqualTo(10);
+        assertThat(event.getDescription().value()).isEqualTo("New description");
     }
 
     @Test
@@ -109,6 +120,11 @@ class UpdateItemUseCaseTest {
         UpdateItemResponse response = updateItemUseCase.execute(command);
 
         assertThat(response.description()).isEqualTo("Now has description");
-        verify(eventPublisher).publishEvent(any(ItemUpdated.class));
+
+        verify(eventPublisher).publishEvent(itemUpdatedCaptor.capture());
+
+        ItemUpdated event = itemUpdatedCaptor.getValue();
+        assertThat(event.getItemId().getValue()).isEqualTo(itemId);
+        assertThat(event.getDescription().value()).isEqualTo("Now has description");
     }
 }

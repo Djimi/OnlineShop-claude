@@ -29,8 +29,14 @@ class ItemTest {
         assertThat(item.getName()).isEqualTo(name);
         assertThat(item.getQuantity()).isEqualTo(quantity);
         assertThat(item.getDescription()).isEqualTo(description);
-        assertThat(item.getDomainEvents()).hasSize(1);
-        assertThat(item.getDomainEvents().get(0)).isInstanceOf(ItemCreated.class);
+        assertThat(item.getDomainEvents()).hasSize(1)
+            .first()
+            .isInstanceOfSatisfying(ItemCreated.class, event -> {
+                assertThat(event.getItemId()).isEqualTo(id);
+                assertThat(event.getName()).isEqualTo(name);
+                assertThat(event.getQuantity()).isEqualTo(quantity);
+                assertThat(event.getDescription()).isEqualTo(description);
+            });
     }
 
     @Test
@@ -84,8 +90,14 @@ class ItemTest {
         assertThat(item.getName()).isEqualTo(newName);
         assertThat(item.getQuantity()).isEqualTo(newQuantity);
         assertThat(item.getDescription()).isEqualTo(newDescription);
-        assertThat(item.getDomainEvents()).hasSize(1);
-        assertThat(item.getDomainEvents().get(0)).isInstanceOf(ItemUpdated.class);
+        assertThat(item.getDomainEvents()).hasSize(1)
+            .first()
+            .isInstanceOfSatisfying(ItemUpdated.class, event -> {
+                assertThat(event.getItemId()).isEqualTo(item.getId());
+                assertThat(event.getName()).isEqualTo(newName);
+                assertThat(event.getQuantity()).isEqualTo(newQuantity);
+                assertThat(event.getDescription()).isEqualTo(newDescription);
+            });
     }
 
     @Test
@@ -126,8 +138,11 @@ class ItemTest {
 
         item.markAsDeleted();
 
-        assertThat(item.getDomainEvents()).hasSize(1);
-        assertThat(item.getDomainEvents().get(0)).isInstanceOf(ItemDeleted.class);
+        assertThat(item.getDomainEvents()).hasSize(1)
+            .first()
+            .isInstanceOfSatisfying(ItemDeleted.class, event ->
+                assertThat(event.getItemId()).isEqualTo(item.getId())
+            );
     }
 
     private static Item createDefaultItem() {
