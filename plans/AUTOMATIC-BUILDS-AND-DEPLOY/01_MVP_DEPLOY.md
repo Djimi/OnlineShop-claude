@@ -10,28 +10,33 @@
 
 ### 1.1 AWS Account & OIDC Foundation
 
-- [ ] Create (or confirm) AWS account under the Free Tier
-- [ ] Select initial AWS region (cheapest suitable EU region — likely `eu-north-1` Stockholm or `eu-central-1` Frankfurt)
-- [ ] Set up GitHub → AWS OIDC trust (no long-lived access keys — req 01 §12)
-- [ ] Create an IAM role scoped to ECR push, ECS deploy, S3/CloudFront management
-- [ ] Store any required secrets in AWS Secrets Manager
+- [x] Create (or confirm) AWS account under the Free Tier
+- [x] Select initial AWS region (cheapest suitable EU region — likely `eu-north-1` Stockholm or `eu-central-1` Frankfurt)
+- [x] Set up GitHub → AWS OIDC trust (no long-lived access keys — req 01 §12)
+
 
 ### 1.2 Container Registry (ECR)
 
-- [ ] Create ECR repositories: `auth`, `items`, `api-gateway`
-- [ ] Confirm each service Dockerfile builds locally and produces a working image
-- [ ] Push images manually (or via a trivial GH Actions workflow) with a SHA-based tag
+- [x] Create ECR repositories: `onlineshop-auth`, `onlineshop-items`, `onlineshop-api-gateway` (fixed naming from initial mistake)
+- [x] Confirm each service Dockerfile builds locally and produces a working image
+- [x] Push images manually (or via a trivial GH Actions workflow) with a SHA-based tag
 
 ### 1.3 Minimal GitHub Actions — Build & Push
 
-- [ ] Create a single reusable workflow (or one per service) that:
-  - Builds the Maven project
-  - Builds the Docker image
-  - Tags with `sha-<SHORT_SHA>`
-  - Pushes to ECR
-- [ ] Enable GitHub Actions dependency caching for Maven (`.m2/repository`)
-- [ ] Enable Docker layer caching (e.g., `docker/build-push-action` with GHA cache backend)
-- [ ] Trigger: manual (`workflow_dispatch`) is sufficient for this pass
+- [x] **1.3.1 IAM role for GitHub Actions → AWS (OIDC)**
+  - Created IAM role `github-actions-onlineshop` (arn:aws:iam::799111666795:role/github-actions-onlineshop)
+  - Trust policy: OIDC from `repo:Djimi/OnlineShop-claude:*` with `sts.amazonaws.com` audience
+  - Attached inline policy `ecr-push-pull` for ECR operations
+  - Additional permissions (ECS, S3, CloudFront) to be added in steps 1.5/1.6
+- [x] **1.3.2 Store secrets in AWS Secrets Manager** — Not needed for Pass 1 MVP (no build-time secrets; runtime secrets come in 1.4)
+- [x] **1.3.3 Create workflow YAML** (`.github/workflows/build-and-push.yml`):
+    - Trigger: `workflow_dispatch` with a `service` input (auth / items / api-gateway / all)
+    - Steps per service: checkout → OIDC auth → ECR login → Maven build → Docker build → push with `sha-<FULL_SHA>` tag
+    - Items also builds `common` first (dependency)
+    - Parallel jobs when `all` is selected
+- [x] **1.3.4 Enable caching** (added to workflow):
+  - Maven: `actions/cache@v4` with service-specific keys based on `pom.xml` hashes, `~/.m2/repository` path
+  - Docker: `docker/build-push-action` with `type=gha` cache backend (`mode=max`)
 
 ### 1.4 Database Layer
 
