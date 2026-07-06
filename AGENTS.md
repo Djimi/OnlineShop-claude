@@ -82,6 +82,7 @@ See [docs/API_DESIGN.md](./docs/API_DESIGN.md) for:
 - Gateway exception: public, unversioned info endpoints (e.g., `/api/product-info`) when no service owns the data
 
 ## Testing Strategy
+ALWAYS read this file before designing or writing tests!
 
 See [docs/TESTING_STRATEGY.md](./docs/TESTING_STRATEGY.md) for:
 - When to run tests
