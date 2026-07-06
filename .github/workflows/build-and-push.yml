@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   build-auth:
-    if: github.event.inputs.service == 'auth' || github.event.inputs.service == 'all'
+    if: github.event_name == 'push' || github.event.inputs.service == 'auth' || github.event.inputs.service == 'all'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-items:
-    if: github.event.inputs.service == 'items' || github.event.inputs.service == 'all'
+    if: github.event_name == 'push' || github.event.inputs.service == 'items' || github.event.inputs.service == 'all'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-api-gateway:
-    if: github.event.inputs.service == 'api-gateway' || github.event.inputs.service == 'all'
+    if: github.event_name == 'push' || github.event.inputs.service == 'api-gateway' || github.event.inputs.service == 'all'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
