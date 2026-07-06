@@ -1,6 +1,13 @@
 name: Build & Push to ECR
 
 on:
+  push:
+    branches:
+      - build_and_release_first_iteration
+    paths-ignore:
+      - 'docs/**'
+      - 'plans/**'
+      - '**.md'
   workflow_dispatch:
     inputs:
       service:
