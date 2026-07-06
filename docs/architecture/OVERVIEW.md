@@ -68,7 +68,7 @@
 
 ```
 1. User submits credentials
-   Frontend → POST /api/v1/auth/login → API Gateway
+   Frontend → POST /auth/login → API Gateway
 
 2. Gateway validates request format
    API Gateway → POST /auth/login → Auth Service
@@ -90,7 +90,7 @@
 
 ```
 1. User requests items
-   Frontend → GET /api/v1/items → API Gateway
+   Frontend → GET /items → API Gateway
 
 2. Gateway checks L1 cache (Caffeine)
    Cache HIT → Return immediately

@@ -11,7 +11,7 @@
 
 ## Responsibilities
 
-- **Routing**: Forward `/api/v1/auth/**` → Auth service and `/api/v1/items/**` → Items service.
+- **Routing**: Forward `/auth/**` → Auth service (rewritten to `/api/v1/auth/**`) and `/items/**` → Items service (rewritten to `/api/v1/items/**`).
 - **Authentication**: Enforce Bearer token auth for protected routes.
 - **Token validation caching**: L1 Caffeine + L2 Redis to avoid per-request Auth calls.
 - **Rate limiting**: Distributed limits via Bucket4j + Redis.
@@ -19,13 +19,13 @@
 
 ## Contracts (Examples)
 
-- **Public routes** (no auth): `/api/v1/auth/**`
-- **Protected routes** (auth required): `/api/v1/items/**`
+- **Public routes** (no auth): `/auth/**`
+- **Protected routes** (auth required): `/items/**`
 
 Example request:
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:10000/api/v1/items
+  http://localhost:10000/items
 ```
 
 ## Authentication Flow (Example)
