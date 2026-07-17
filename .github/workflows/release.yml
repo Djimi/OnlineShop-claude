@@ -3,10 +3,10 @@ name: Release
 on:
   pull_request:
     branches:
-      - main
+      - github_actions_test
   push:
     branches:
-      - main
+      - github_actions_test
 
 jobs:
   release:
