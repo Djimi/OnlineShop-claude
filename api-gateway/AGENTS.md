@@ -14,8 +14,8 @@ The API Gateway is the entry point to OnlineShop services. It routes traffic, en
 
 ## Responsibilities
 
-- **Routing**: `/api/v1/auth/**` → Auth, `/api/v1/items/**` → Items.
-- **Authentication**: Bearer token required for `/api/v1/items/**`.
+- **Routing**: `/auth/**` → Auth (rewritten to `/api/v1/auth/**`), `/items/**` → Items (rewritten to `/api/v1/items/**`).
+- **Authentication**: Bearer token required for `/items/**`.
 - **Public info endpoint**: `/api/product-info` → static product info (no auth, no downstream call).
 - **Token caching**: L1 Caffeine + L2 Redis for validation results.
 - **Rate limiting**: Bucket4j + Redis.
@@ -23,14 +23,14 @@ The API Gateway is the entry point to OnlineShop services. It routes traffic, en
 
 ## Contracts (Examples)
 
-- Public: `/api/v1/auth/**`
+- Public: `/auth/**`
 - Public: `/api/product-info` (static info endpoint; unversioned by design)
-- Protected: `/api/v1/items/**`
+- Protected: `/items/**`
 
 Example:
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:10000/api/v1/items
+  http://localhost:10000/items
 ```
 
 ## Authentication Flow (Example)

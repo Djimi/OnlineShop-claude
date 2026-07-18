@@ -8,7 +8,17 @@
 >
 > In tests always use version for 3th party technologies listed in the docker compose file in the root dir - Postgres, Redis, etc.
 
-## Philosophy
+## When to Run Tests
+
+**Run tests after EVERY code change — BEFORE committing.** This is a hard requirement:
+
+1. `./mvnw clean test` from the affected service directory (e.g., `Items/`, `Auth/`)
+2. If E2E tests apply to the change, also run `./mvnw clean test` from `e2e-tests/`
+3. Only commit if ALL tests pass — never commit failing tests or skip testing
+
+**Test output must show clean (zero failures).** Warnings from libraries (Mockito self-attach, Jansi, etc.) are expected and can be ignored.
+
+## Testing Philosophy
 
 [//]: # (We follow **Test-Driven Development &#40;TDD&#41;** when writing new code when writing new code: write a failing test first, implement the minimal code to pass, then refactor. Tests are not an afterthought—they drive design decisions and serve as living documentation.)
 
@@ -44,8 +54,16 @@
 ### Unit Tests
 Test business logic in isolation. Mock all dependencies. These are your primary safety net—fast, focused, and numerous. Test edge cases, validation rules, and error handling. Don't test simple getters/setters or framework code.
 
+**Domain events:** When testing code that emits domain events, assert event properties — never only the event type. The right event type with wrong data is still a bug.
+
 ### Integration Tests
 Verify components work together with real dependencies. Use Testcontainers for PostgreSQL and Redis—never H2 or in-memory substitutes. Test repository queries, controller request handling, and database constraints. These catch issues unit tests miss.
+
+**Integration test requirements:**
+- Check ALL side effects, not just API responses: verify DB state (entities persisted/deleted), domain events, any file system changes
+- Test both happy path AND error scenarios (404, 400, etc.)
+- Use `@SpringBootTest(webEnvironment = RANDOM_PORT)` with `@DynamicPropertySource` for Testcontainers in Spring Boot 4.X
+- `@AutoConfigureTestDatabase` and `@WebMvcTest` were removed in Spring Boot 4.0 — do not use them
 
 ### Contract Tests (Future)
 When services multiply, contract tests prevent breaking changes between API consumers and producers. The consumer defines expectations; the producer verifies compliance. Critical for microservices independence.
@@ -69,7 +87,11 @@ Excluded from coverage measurement (see `pom.xml` JaCoCo config):
 - `**/config/**` — Spring configuration classes
 - `**/*Application.*` — Main class bootstrap
 - `**/dto/**` — Data transfer objects (no logic)
-- `**/entity/**` — JPA entities (framework-managed)
+- `**/entity/**` — JPA entities only (infrastructure persistence layer). Domain entities in `domain.aggregateroots` ARE tested.
+- `**/command/**` — Command objects (pure records, no logic)
+- `**/query/**` — Query objects (pure records, no logic)
+- `**/web/**` — Controllers, exception handlers (require integration tests with Spring context)
+- `**/infrastructure/**` — JPA adapters, ID generators, mappers (require integration tests with real DB)
 
 ## Test Naming Convention
 
@@ -109,14 +131,15 @@ Resist the urge to write production code without a failing test first. The disci
 
 ### Running Tests
 
-> **Important:** If you are not in the service folder, navigate to it first.
+> **Important:** Always run from the target service directory — NOT from a parent or sibling directory. Do NOT use `-f ../Service/pom.xml` patterns.
 
 ```bash
-# Unit + Integration (per service), should be run from the respective service folder
-./mvnw clean test
+# Unit + Integration (per service), run from the respective service folder
+cd Items/ && ./mvnw clean test
+cd Auth/ && ./mvnw clean test
 
-# E2E (from e2e-tests/, requires docker compose up before or docker)
-./mvnw clean test
+# E2E tests (from e2e-tests/, requires docker compose up first)
+cd e2e-tests/ && ./mvnw clean test
 
 # With coverage report
 ./mvnw clean test jacoco:report
