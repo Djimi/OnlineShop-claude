@@ -21,6 +21,7 @@ After Pass 1 you have a **working deployment**. After Pass 4 you satisfy **every
 2. [02_CI_PIPELINE_HARDENING.md](./02_CI_PIPELINE_HARDENING.md) — Branch protection, selective builds, test gates, Docker tagging, caching, staging
 3. [03_RELEASE_TRACEABILITY.md](./03_RELEASE_TRACEABILITY.md) — Release identity, promotion flow, production env, rollback, traceability chain, ECR retention
 4. [04_OPERATIONAL_MATURITY.md](./04_OPERATIONAL_MATURITY.md) — Notifications, dashboards, audit, merge queue, nightly builds, runbooks, cost monitoring
+5. [05_FUTURE_IMPROVEMENTS.md](./05_FUTURE_IMPROVEMENTS.md) — Non-mandatory improvements for later (Dependabot, etc.)
 
 ---
 
@@ -70,3 +71,4 @@ The $5/month ceiling is respected throughout by:
 - [ ] **Pass 2** — CI Pipeline Hardening & Staging
 - [ ] **Pass 3** — Release, Traceability & Promotion
 - [ ] **Pass 4** — Operational Maturity
+- [ ] **Pass 5** — Future Improvements (non-mandatory)
