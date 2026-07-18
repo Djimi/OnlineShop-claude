@@ -5,6 +5,3 @@
 
 logs/
 tests/performance/reports/
-
-# Maven wrapper JAR — downloaded automatically by mvnw
-**/maven-wrapper.jar

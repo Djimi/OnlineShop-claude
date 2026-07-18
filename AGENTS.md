@@ -35,9 +35,50 @@ When using Maven commands you MUST use the Maven wrapper (`./mvnw`) inside the s
 
 ## Quick Reference
 
-See [docs/PROJECTS_OVERVIEW.md](./docs/PROJECTS_OVERVIEW.md) (always read that file!) for:
-- Main idea of the project
-- Services & Ports table
+### Project Identity
+
+| Property | Value |
+|----------|-------|
+| AWS Account ID | `799111666795` |
+| AWS Region | `eu-north-1` (Stockholm) |
+| OIDC Role | `arn:aws:iam::799111666795:role/github-actions-onlineshop` |
+| ECR Registry | `799111666795.dkr.ecr.eu-north-1.amazonaws.com` |
+| ECR Naming | `onlineshop-<service>` (auth, items, api-gateway) |
+
+### Services & Ports
+
+| Service | Port | Java Version | Maven Wrapper | Depends On |
+|---------|------|-------------|---------------|------------|
+| Auth | 9001 | 25 | Yes | — |
+| Items | 9000 | 25 | Yes | common |
+| API Gateway | 10000 | 25 | Yes | — |
+| Common | — | 25 | Yes | — |
+| Frontend | 5173 | — | No | — |
+| E2E Tests | — | — | Yes | — |
+
+## CI/CD & AWS Infrastructure
+
+See [docs/CI_CD_GOTCHAS.md](./docs/CI_CD_GOTCHAS.md) for the full pitfall checklist. Always read that file before working on CI/CD or AWS infra.
+
+### Before any AWS work
+- Always run `aws sts get-caller-identity` first in any new terminal session
+- Always pass `--region eu-north-1` explicitly; AWS resources are region-scoped and invisible across regions
+- Every `create`/`put`/`delete` MUST be followed by a `describe`/`get`/`list` to confirm the change took effect
+
+### GitHub Actions development rules
+1. **Version check always:** Before setting `java-version` in `setup-java`, cross-check `<java.version>` in `pom.xml` AND the `FROM` line in `Dockerfile`. All three must agree.
+2. **Workflow dispatch testability:** `workflow_dispatch` workflows are ONLY indexed by GitHub from the default branch (`main`). During development on a feature branch, temporarily add a `push` trigger. Remove it before merging.
+3. **Event context guard:** `github.event.inputs` is `null` on `push` events — it only exists for `workflow_dispatch`. Always check `github.event_name == 'workflow_dispatch'` before accessing `.inputs`.
+4. **BuildKit requirement:** Any `docker/build-push-action` using `cache-from`/`cache-to` (type=gha) MUST be preceded by `docker/setup-buildx-action@v3`. The default runner Docker driver does not support cache export.
+5. **Post-mutation verify:** Every AWS `create`/`put`/`delete` must be followed by a `describe`/`get`/`list` to confirm it took effect.
+
+### Windows PowerShell → AWS JSON
+PowerShell's default UTF-8-with-BOM encoding confuses AWS IAM. When creating JSON files for AWS:
+```powershell
+# DON'T use @'...'@ here-strings — they add a BOM
+# DO use explicit ASCII encoding
+[System.IO.File]::WriteAllText("path.json", $jsonString, [System.Text.Encoding]::ASCII)
+```
 
 ## Maven Build Dependencies & Parallel Builds
 
