@@ -42,20 +42,17 @@ info:
       host: localhost
       port: 6379
       timeout: 100ms
+      connect-timeout: 10s
 
 # Actuator & Metrics
 management:
   endpoint:
     health:
-      show-details: always
-    env:
-      show-values: always
-    configprops:
-      show-values: always
+      show-details: when-authorized
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,metrics,prometheus
   metrics:
     tags:
       application: api-gateway
@@ -84,4 +81,3 @@ gateway:
       requests-per-minute: 5
       burst: 50
 
-debug: true
