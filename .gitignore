@@ -5,3 +5,5 @@
 
 logs/
 tests/performance/reports/
+
+.env
