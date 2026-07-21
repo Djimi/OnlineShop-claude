@@ -54,12 +54,21 @@ No credentials in AWS Secrets Manager yet.
 
 ---
 
-## Step 1.4b — Apply init-db scripts (IN PROGRESS)
+## Step 1.4b — Apply init-db scripts ✅
 
-- [ ] Create `items` database on RDS
-- [ ] Apply Auth DDL: `Auth/init-db/01-schema.sql` → database `auth`
-- [ ] Apply Auth seed: `Auth/init-db/02-seed-data.sql` → database `auth`
-- [ ] Apply Items DDL: `Items/init-db/01-schema.sql` → database `items`
-- [ ] Apply Items seed: `Items/init-db/02-data.sql` → database `items`
-- [ ] Store DB credentials in AWS Secrets Manager
+- [x] Create `items` database on RDS
+- [x] Apply Auth DDL: `Auth/init-db/01-schema.sql` → table `users` + `sessions` on database `auth`
+- [x] Apply Auth seed: `Auth/init-db/02-seed-data.sql` → 1 test user (`testuser`)
+- [x] Apply Items DDL: `Items/init-db/01-schema.sql` → table `items` on database `items`
+- [x] Apply Items seed: `Items/init-db/02-data.sql` → 5 seed products
+- [x] Create least-privilege service accounts (not root `dbadmin`):
+  - `auth_app` — access only to `auth` database (SELECT/INSERT/UPDATE/DELETE on all tables)
+  - `items_app` — access only to `items` database (SELECT/INSERT/UPDATE/DELETE on all tables)
+- [x] Store service credentials in AWS Secrets Manager:
+  - `onlineshop/auth/db` — ARN: `arn:aws:secretsmanager:eu-north-1:799111666795:secret:onlineshop/auth/db-umtxh1`
+  - `onlineshop/items/db` — ARN: `arn:aws:secretsmanager:eu-north-1:799111666795:secret:onlineshop/items/db-bM5eSY`
+
+**Connectivity method:** `docker run --rm -e PGPASSWORD=$PASS postgres:18-alpine psql -h $HOST -U $USER -d $DB`
+No `psql` client installed locally; used Postgres Docker image as client.
+Master user: `dbadmin`, password stored in local `.env` (`POSTGRES_AWS_SECRET`). Root user NOT used by apps.
 
